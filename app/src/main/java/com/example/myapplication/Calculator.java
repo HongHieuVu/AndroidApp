@@ -1,7 +1,5 @@
 package com.example.myapplication;
 
-import android.graphics.Path;
-
 import com.example.myapplication.Exceptions.IllegalOperator;
 
 import java.util.Scanner;
@@ -12,7 +10,7 @@ public class Calculator {
      * enum of all operators
      */
     public enum Operators{
-        STOP("(", 4),
+        OPEN_PAR("(", 1),
         ADD("+", 1,  (double a, double b) -> a + b),
         SUB("-", 1, (double a, double b) -> a - b),
         MUL("*", 2, (double a, double b) -> a * b),
@@ -130,7 +128,6 @@ public class Calculator {
     }
 
     private final char CLOSE_PAR = ')'; //close par is the calculate order
-    private final char OPEN_PAR = '(';
     private final char SPACE = ' ';
     private final char END_ABS = '|';
     private final char DECIMAL_POINT_ENG = '.';
@@ -157,6 +154,11 @@ public class Calculator {
      * @throws IllegalOperator when there's an operator unfamiliar to the calculator in the equation
      */
     public Double calculate(String input) throws IllegalOperator {
+        vals.clear();
+        vals.push(0.0); //so that one arg ops have something to pop if they come first
+        ops.clear();
+        ops.push(Operators.OPEN_PAR); //to simplify backCalc method
+
         String buffer = input;
         StringBuilder longOp = null; //long operators are operators with more than one char
         StringBuilder number = null;
@@ -195,9 +197,7 @@ public class Calculator {
 
                 //calculate
                 if (c == CLOSE_PAR | c == END_ABS) {
-                    if (ops.isEmpty()) continue;
-                    Operators op = ops.pop();
-                    vals.push(op.calculate());
+                    backCalculate();
                     continue;
                 }
 
@@ -206,24 +206,45 @@ public class Calculator {
                 longOp.append(c);
                 Operators op = Operators.assignEnum(longOp.toString());
                 if (op == null) continue;
+                if (!ops.isEmpty()
+                        && ops.peek().orderOfExec > op.orderOfExec
+                        && !(op == Operators.OPEN_PAR)){
+                    Operators prevOp = ops.pop();
+                    vals.push(prevOp.calculate());
+                }
                 ops.push(op);
                 longOp = null;
             }
         }
 
-        //push this building number
+        //push this remaining number
         if (number != null){
             Scanner numScnr = new Scanner(number.toString());
             vals.push(numScnr.nextDouble());
         }
 
         //execute all recorded operations
-        while (!ops.empty()){
+        backCalculate();
+        return vals.pop();
+    }
+
+    /**
+     * calculates backward by popping stack until nothing left.
+     * Stops if encountered an open parenthesis or stack is empty.
+     * While calculating backward, checks if the next operator in stack has higher order. If so that
+     * operator will be executed first to flatten out order.
+     */
+    private void backCalculate(){
+        //this function's integrity depends entirely on java implementing short circuit below
+        while (!ops.isEmpty() && (ops.peek() != Operators.OPEN_PAR)){
             Operators op = ops.pop();
+            if (!ops.empty() && ops.peek().orderOfExec > op.orderOfExec){
+                Operators prevOp = ops.pop();
+                vals.push(prevOp.calculate());
+            }
             vals.push(op.calculate());
         }
-
-        return vals.pop();
+        if (!ops.isEmpty() && (ops.peek() == Operators.OPEN_PAR)) ops.pop(); //removes open par
     }
 
     /**
