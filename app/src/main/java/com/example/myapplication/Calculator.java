@@ -37,8 +37,14 @@ public class Calculator {
             vals.push(ignored);
             return Math.cos(a);}
             ),
-        TAN("tan",(double ignored, double a) -> Math.sin(a) / Math.cos(a)),
-        COT("cot", (double ignored, double a) -> Math.cos(a) / Math.sin(a));
+        TAN("tan",(double ignored, double a) -> {
+            vals.push(ignored);
+            return Math.sin(a) / Math.cos(a);
+        }),
+        COT("cot", (double ignored, double a) -> {
+            vals.push(ignored);
+            return Math.cos(a) / Math.sin(a);
+        });
 
 
         /**
@@ -63,6 +69,12 @@ public class Calculator {
             this.operation = operation;
         }
 
+        /**
+         * intended for operators with special representations in the calculator
+         * @param operatorStr what user types in to call this operator
+         * @param normalName example use
+         * @param operation function of this operator
+         */
         Operators(String operatorStr, String normalName, Operation operation) {
             this.operatorStr = operatorStr;
             this.normalName = normalName;
