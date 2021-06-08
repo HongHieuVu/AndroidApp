@@ -19,6 +19,27 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             tools:ignore="UselessParent">
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <TextView
+                        android:id="@+id/userGuide"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="20sp"
+                        android:gravity="center">
+                    </TextView>
+
+                </LinearLayout>
+
+            </ScrollView>
+
             <EditText
                 android:id="@+id/numInput"
                 android:layout_width="match_parent"
@@ -26,7 +47,7 @@
                 android:gravity="center"
                 android:inputType="text"
                 android:textSize="30sp"
-                android:autofillHints=""
+                android:autofillHints="Equation here"
                 tools:ignore="LabelFor">
             </EditText>
             <Button

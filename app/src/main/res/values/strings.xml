@@ -2,4 +2,5 @@
     <string name="app_name">My Application</string>
     <string name="calculate">Calculate</string>
     <string name="_0">0</string>
+    <string name="square_root_sqrt_n_absolute_value">square root: sqrt()\n absolute value: |</string>
 </resources>

@@ -13,6 +13,7 @@ import com.example.myapplication.Exceptions.IllegalOperator;
 
 public class MainActivity extends AppCompatActivity {
 
+    TextView userGuide;
     EditText numInput;
     Button calculate;
     TextView result;
@@ -23,14 +24,16 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        userGuide = findViewById(R.id.userGuide);
         numInput = findViewById(R.id.numInput);
         calculate = findViewById(R.id.calculate);
         result = findViewById(R.id.result);
 
+        Calculator calculator = Calculator.getCalculator();
+        userGuide.setText(calculator.listAllSpecialOps());
         result.setText(String.format("%-6s", "result"));
 
         calculate.setOnClickListener(v -> {
-            Calculator calculator = Calculator.getCalculator();
             String input = numInput.getText().toString();
             try {
                 Double calcResult = calculator.calculate(input);
