@@ -236,15 +236,15 @@ public class Calculator {
      */
     private void backCalculate(){
         //this function's integrity depends entirely on java implementing short circuit below
-        while (!ops.isEmpty() && (ops.peek() != Operators.OPEN_PAR)){
+        while ((ops.peek() != Operators.OPEN_PAR)){
             Operators op = ops.pop();
-            if (!ops.empty() && ops.peek().orderOfExec > op.orderOfExec){
+            if (ops.peek().orderOfExec > op.orderOfExec){
                 Operators prevOp = ops.pop();
                 vals.push(prevOp.calculate());
             }
             vals.push(op.calculate());
         }
-        if (!ops.isEmpty() && (ops.peek() == Operators.OPEN_PAR)) ops.pop(); //removes open par
+        ops.pop(); //removes open par
     }
 
     /**
