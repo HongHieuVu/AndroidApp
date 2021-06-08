@@ -4,7 +4,6 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -29,7 +28,9 @@ public class MainActivity extends AppCompatActivity {
         calculate = findViewById(R.id.calculate);
         result = findViewById(R.id.result);
 
+        //Experimental calculator
         Calculator calculator = Calculator.getCalculator();
+
         userGuide.setText(calculator.listAllSpecialOps());
         result.setText(String.format("%-6s", "result"));
 

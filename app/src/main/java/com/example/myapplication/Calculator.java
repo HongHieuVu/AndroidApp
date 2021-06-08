@@ -1,51 +1,58 @@
 package com.example.myapplication;
 
+import android.graphics.Path;
+
 import com.example.myapplication.Exceptions.IllegalOperator;
 
 import java.util.Scanner;
 import java.util.Stack;
 
 public class Calculator {
-
     /**
      * enum of all operators
      */
-    enum Operators{
-        ADD("+",  (double a, double b) -> a + b),
-        SUB("-", (double a, double b) -> a - b),
-        MUL("*", (double a, double b) -> a * b),
-        DIV("/", (double a, double b) -> a / b),
-        SQRT("sqrt", "Square root", (double ignored, double a) -> {
+    public enum Operators{
+        STOP("(", 4),
+        ADD("+", 1,  (double a, double b) -> a + b),
+        SUB("-", 1, (double a, double b) -> a - b),
+        MUL("*", 2, (double a, double b) -> a * b),
+        DIV("/", 2, (double a, double b) -> a / b),
+        SQRT("sqrt", "Square root", 3,
+                (double ignored, double a) -> {
             vals.push(ignored);
             return Math.sqrt(a);}
             ),
-        ABS("|", "Absolute value", (double ignored, double a) -> {
+        ABS("|", "Absolute value", 3, (double ignored, double a) -> {
             vals.push(ignored);
             return Math.abs(a);}
             ),
-        LOG("log", "a log b (a: base)", (double a, double b) -> Math.log(b) / Math.log(a)),
-        NLOG("ln", "ln b (natural exponent)", (double ignored, double a) -> {
+        LOG("log", "log base a ( a log(b) )", 3,
+                (double a, double b) -> Math.log(b) / Math.log(a)
+            ),
+        NLOG("ln", "ln b (natural logarithm)", 3,
+                (double ignored, double a) -> {
             vals.push(ignored);
             return Math.log(a);}
             ),
-        EXP("^", "a to the b", (double a, double b) -> Math.pow(a, b)),
-        SIN("sin", (double ignored, double a) -> {
+        EXP("^", "a to the b", 3,
+                (double a, double b) -> Math.pow(a, b)
+            ),
+        SIN("sin", 3, (double ignored, double a) -> {
             vals.push(ignored);
             return Math.sin(a);}
             ),
-        COS("cos", (double ignored, double a) -> {
+        COS("cos", 3, (double ignored, double a) -> {
             vals.push(ignored);
             return Math.cos(a);}
             ),
-        TAN("tan",(double ignored, double a) -> {
+        TAN("tan", 3, (double ignored, double a) -> {
             vals.push(ignored);
-            return Math.sin(a) / Math.cos(a);
-        }),
-        COT("cot", (double ignored, double a) -> {
+            return Math.sin(a) / Math.cos(a);}
+            ),
+        COT("cot", 3, (double ignored, double a) -> {
             vals.push(ignored);
-            return Math.cos(a) / Math.sin(a);
-        });
-
+            return Math.cos(a) / Math.sin(a);}
+            );
 
         /**
          * intended to mark operators with conventional names different from what user type in. Will
@@ -63,8 +70,21 @@ public class Calculator {
          */
         private final Operation operation;
 
-        Operators(String operatorStr, Operation operation) {
+        /**
+         * higher order of execution will be executed first.
+         */
+        private final int orderOfExec;
+
+        Operators(String operatorStr, int orderOfExec){
+            this.operatorStr = operatorStr;
             this.normalName = null;
+            this.operation = null;
+            this.orderOfExec = orderOfExec;
+        }
+
+        Operators(String operatorStr, int orderOfExec, Operation operation) {
+            this.normalName = null;
+            this.orderOfExec = orderOfExec;
             this.operatorStr = operatorStr;
             this.operation = operation;
         }
@@ -72,12 +92,14 @@ public class Calculator {
         /**
          * intended for operators with special representations in the calculator
          * @param operatorStr what user types in to call this operator
+         * @param orderOfExec precedence, higher means first
          * @param normalName example use
          * @param operation function of this operator
          */
-        Operators(String operatorStr, String normalName, Operation operation) {
+        Operators(String operatorStr, String normalName, int orderOfExec, Operation operation) {
             this.operatorStr = operatorStr;
             this.normalName = normalName;
+            this.orderOfExec = orderOfExec;
             this.operation = operation;
         }
 
@@ -94,10 +116,6 @@ public class Calculator {
             return this.operatorStr;
         }
 
-        public String getNormalName(){
-            return this.normalName;
-        }
-
         /**
          * converts from String to corresponding enum
          * @param operator string for conversion
@@ -111,7 +129,7 @@ public class Calculator {
         }
     }
 
-    private final char CLOSE_PAR = ')';
+    private final char CLOSE_PAR = ')'; //close par is the calculate order
     private final char OPEN_PAR = '(';
     private final char SPACE = ' ';
     private final char END_ABS = '|';
@@ -132,6 +150,12 @@ public class Calculator {
         return cal;
     }
 
+    /**
+     * solve the equation
+     * @param input input equation
+     * @return the result
+     * @throws IllegalOperator when there's an operator unfamiliar to the calculator in the equation
+     */
     public Double calculate(String input) throws IllegalOperator {
         String buffer = input;
         StringBuilder longOp = null; //long operators are operators with more than one char
@@ -153,7 +177,7 @@ public class Calculator {
                 if (number == null) number = new StringBuilder();
                 number.append(c);
             } else {
-                if (c == SPACE | c == OPEN_PAR) continue;
+                if (c == SPACE) continue;
 
                 //appends decimal point to the number
                 if (c == DECIMAL_POINT_ENG){
@@ -171,6 +195,7 @@ public class Calculator {
 
                 //calculate
                 if (c == CLOSE_PAR | c == END_ABS) {
+                    if (ops.isEmpty()) continue;
                     Operators op = ops.pop();
                     vals.push(op.calculate());
                     continue;
