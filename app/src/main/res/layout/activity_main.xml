@@ -47,7 +47,7 @@
                 android:gravity="center"
                 android:inputType="text"
                 android:textSize="30sp"
-                android:autofillHints="Equation here"
+                android:hint="@string/enter_equation"
                 tools:ignore="LabelFor">
             </EditText>
             <Button
@@ -65,6 +65,7 @@
                 android:gravity="center"
                 android:textSize="30sp">
             </TextView>
+
         </LinearLayout>
 
     </RelativeLayout>

@@ -1,18 +1,22 @@
 package com.example.myapplication;
 
 import com.example.myapplication.Exceptions.IllegalOperator;
+import com.example.myapplication.Exceptions.NoSolution;
+import com.example.myapplication.Experimental.NumInputObserver;
 
 import java.util.EmptyStackException;
 import java.util.Scanner;
 import java.util.Stack;
+import java.util.Timer;
 
-public class Calculator {
+public class Calculator{
+
     /**
      * enum of all operators
      */
     public enum Operators{
-        OPEN_PAR("(", 1),
-        ADD("+", 1,  (double a, double b) -> a + b),
+        OPEN_PAR("(", 0), //should have lowest order
+        ADD("+", 0,  (double a, double b) -> a + b),
         SUB("-", 1, (double a, double b) -> a - b),
         MUL("*", 2, (double a, double b) -> a * b),
         DIV("/", 2, (double a, double b) -> a / b),
@@ -107,7 +111,9 @@ public class Calculator {
          * @return result of calculation
          */
         public Double calculate() {
-            double second = vals.pop(), first = vals.pop(); //op must push back sec if it only requires first
+            double second = vals.pop(), first;
+            if (vals.isEmpty()) first = 0.0; //infinite zeros
+            else first = vals.pop(); //op must push back sec if it only requires first
             assert this.operation != null;
             return this.operation.execute(first, second);
         }
@@ -133,10 +139,13 @@ public class Calculator {
     private final char SPACE = ' ';
     private final char END_ABS = '|';
     private final char DECIMAL_POINT_ENG = '.';
+    private final char VARIABLE = 'x';
+    private final char EQUALS = '=';
 
     private static Calculator cal;
     private static Stack<Operators> ops;
     private static Stack<Double> vals;
+    private static double var = 0.12;
 
     private Calculator(){
         ops = new Stack<>();
@@ -150,7 +159,8 @@ public class Calculator {
     }
 
     /**
-     * solve the equation
+     * solve the equation. Calling this method on a double sided equation returns the left hand side
+     * minus the right hand side
      * @param input input equation
      * @return the result
      * @throws IllegalOperator when there's an operator unfamiliar to the calculator in the equation
@@ -204,6 +214,30 @@ public class Calculator {
                     continue;
                 }
 
+                //inserts variable
+                if (c == VARIABLE){
+                    vals.push(var);
+                    continue;
+                }
+
+                //inverts right hand side
+                if (c == EQUALS){
+                    Stack<Operators> oldOps = ops;
+                    Stack<Double> oldVals = vals;
+                    backCalculate();
+                    ops.push(Operators.OPEN_PAR);
+                    ops = new Stack<>();
+                    vals = new Stack<>();
+                    Double rightHandSideInverted = -1 * calculate(buffer);
+                    buffer = ""; //buffer is RHS already consumed
+                    ops = oldOps;
+                    vals = oldVals;
+                    ops.push(Operators.ADD);
+                    ops.push(Operators.OPEN_PAR);
+                    vals.push(rightHandSideInverted);
+                    continue;
+                }
+
                 //note the operator
                 if (longOp == null) longOp = new StringBuilder();
                 longOp.append(c);
@@ -226,7 +260,9 @@ public class Calculator {
         }
 
         //execute all recorded operations
-        backCalculate();
+        while (!ops.isEmpty()){
+            backCalculate();
+        }
         return vals.pop();
     }
 
@@ -240,12 +276,64 @@ public class Calculator {
         while (ops.peek() != Operators.OPEN_PAR){
             Operators op = ops.pop();
             if (ops.peek().orderOfExec > op.orderOfExec){
-                Operators prevOp = ops.pop();
-                vals.push(prevOp.calculate());
+                if (ops.peek() == Operators.SUB){
+                    double tmp = vals.pop();
+                    Operators prevOp = ops.pop();
+                    vals.push(prevOp.calculate());
+                    vals.push(tmp);
+                } else {
+                    Operators prevOp = ops.pop();
+                    vals.push(prevOp.calculate());
+                }
             }
             vals.push(op.calculate());
         }
         ops.pop(); //removes open par
+    }
+
+    /**
+     *
+     * @param input
+     * @return
+     * @throws NoSolution
+     * @throws IllegalOperator
+     */
+    public Double solve(String input) throws NoSolution, IllegalOperator {
+        double tolerance = Math.pow(0.1, 8);  //solution tolerance accepted
+        long timeAllowed = 10;     //time tolerated to solve (sec)
+        double startVal = 0.0;     //current x
+        double dx = Math.pow(0.1, 1);       //step size
+        var = startVal;            //set initial variable value
+
+        long startTime = System.currentTimeMillis(), currTime, elapsed;
+
+        double y;
+        double derivative;
+        do {
+            //get value of y(x) at current x
+            y = calculate(input);
+
+            //calculate derivative at current x
+            var += dx;
+            double dy = calculate(input) - y; //result of calculate has changed since var changed
+            derivative = dy / dx;
+
+            //get new x
+            var = var - (y / derivative);
+
+            //update step size
+            dx = dx / 3;
+
+            //checks if time limit exceeded
+            currTime = System.currentTimeMillis();
+            elapsed = (currTime - startTime) / 1000; //milisec to sec
+            System.out.println(y + " " + (Math.abs(y) > tolerance));
+        } while (Math.abs(y) > tolerance && elapsed < timeAllowed);
+
+        if (elapsed > timeAllowed)
+            throw new NoSolution("No solution found in reasonable time");
+
+        return var;
     }
 
     /**
