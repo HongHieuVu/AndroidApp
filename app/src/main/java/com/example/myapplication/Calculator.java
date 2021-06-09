@@ -2,6 +2,7 @@ package com.example.myapplication;
 
 import com.example.myapplication.Exceptions.IllegalOperator;
 
+import java.util.EmptyStackException;
 import java.util.Scanner;
 import java.util.Stack;
 
@@ -107,6 +108,7 @@ public class Calculator {
          */
         public Double calculate() {
             double second = vals.pop(), first = vals.pop(); //op must push back sec if it only requires first
+            assert this.operation != null;
             return this.operation.execute(first, second);
         }
 
@@ -152,8 +154,9 @@ public class Calculator {
      * @param input input equation
      * @return the result
      * @throws IllegalOperator when there's an operator unfamiliar to the calculator in the equation
+     * @see Calculator#backCalculate()
      */
-    public Double calculate(String input) throws IllegalOperator {
+    public Double calculate(String input) throws IllegalOperator, EmptyStackException {
         vals.clear();
         vals.push(0.0); //so that one arg ops have something to pop if they come first
         ops.clear();
@@ -206,9 +209,8 @@ public class Calculator {
                 longOp.append(c);
                 Operators op = Operators.assignEnum(longOp.toString());
                 if (op == null) continue;
-                if (!ops.isEmpty()
-                        && ops.peek().orderOfExec > op.orderOfExec
-                        && !(op == Operators.OPEN_PAR)){
+                if (ops.peek().orderOfExec > op.orderOfExec
+                        && (op != Operators.OPEN_PAR)){
                     Operators prevOp = ops.pop();
                     vals.push(prevOp.calculate());
                 }
@@ -235,8 +237,7 @@ public class Calculator {
      * operator will be executed first to flatten out order.
      */
     private void backCalculate(){
-        //this function's integrity depends entirely on java implementing short circuit below
-        while ((ops.peek() != Operators.OPEN_PAR)){
+        while (ops.peek() != Operators.OPEN_PAR){
             Operators op = ops.pop();
             if (ops.peek().orderOfExec > op.orderOfExec){
                 Operators prevOp = ops.pop();

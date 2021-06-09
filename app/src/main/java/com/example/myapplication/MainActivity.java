@@ -10,6 +10,8 @@ import android.widget.TextView;
 
 import com.example.myapplication.Exceptions.IllegalOperator;
 
+import java.util.EmptyStackException;
+
 public class MainActivity extends AppCompatActivity {
 
     TextView userGuide;
@@ -42,6 +44,8 @@ public class MainActivity extends AppCompatActivity {
             } catch (IllegalOperator illegalOperator) {
                 String message = illegalOperator.getMessage();
                 result.setText(message);
+            } catch (EmptyStackException emptyStackException){
+                result.setText(String.format("%-16s", "Wrong arithmetic"));
             }
         });
     }
