@@ -221,6 +221,10 @@ public class Calculator{
                 }
 
                 //inverts right hand side
+//                if (c == EQUALS){
+//
+//                }
+
                 if (c == EQUALS){
                     Stack<Operators> oldOps = ops;
                     Stack<Double> oldVals = vals;
@@ -229,13 +233,12 @@ public class Calculator{
                     ops = new Stack<>();
                     vals = new Stack<>();
                     Double rightHandSideInverted = -1 * calculate(buffer);
-                    buffer = ""; //buffer is RHS already consumed
                     ops = oldOps;
                     vals = oldVals;
                     ops.push(Operators.ADD);
                     ops.push(Operators.OPEN_PAR);
                     vals.push(rightHandSideInverted);
-                    continue;
+                    break; //RHS and LHS are all collapsed
                 }
 
                 //note the operator
@@ -299,10 +302,10 @@ public class Calculator{
      * @throws IllegalOperator
      */
     public Double solve(String input) throws NoSolution, IllegalOperator {
-        double tolerance = Math.pow(0.1, 8);  //solution tolerance accepted
+        double tolerance = Math.pow(0.1, 7);  //solution tolerance accepted
         long timeAllowed = 10;     //time tolerated to solve (sec)
         double startVal = 0.0;     //current x
-        double dx = Math.pow(0.1, 1);       //step size
+        double dx = Math.pow(0.1, 2);       //step size
         var = startVal;            //set initial variable value
 
         long startTime = System.currentTimeMillis(), currTime, elapsed;
@@ -322,7 +325,7 @@ public class Calculator{
             var = var - (y / derivative);
 
             //update step size
-            dx = dx / 3;
+            dx = dx / 2;
 
             //checks if time limit exceeded
             currTime = System.currentTimeMillis();
