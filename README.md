@@ -9,3 +9,5 @@ This app can recognize informally written equation, not demanding user to specif
 without having the user specifically write this:
 
 (3*((3log(2)+1)*sin(3)))+2
+
+Also, there's an equation-solving mode, for those who are lazy. Just type in the equation and the app would adjust the mode accordingly.
