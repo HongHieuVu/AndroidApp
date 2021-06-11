@@ -185,8 +185,18 @@ public class Calculator{
             if (Character.isDigit(c)) {
 
                 //see if the previous operator is complete
-                if (longOp != null)
-                    throw new IllegalOperator("Illegal operator: " + longOp.toString());
+                if (longOp != null){
+                    Operators op = Operators.assignEnum(longOp.toString());
+                    if (op == null)
+                        throw new IllegalOperator("Illegal operator: " + longOp.toString());
+                    if (ops.peek().orderOfExec > op.orderOfExec
+                            && (op != Operators.OPEN_PAR)){
+                        Operators prevOp = ops.pop();
+                        vals.push(prevOp.calculate());
+                    }
+                    ops.push(op);
+                    longOp = null;
+                }
 
                 //note the number
                 if (number == null) number = new StringBuilder();
@@ -221,38 +231,27 @@ public class Calculator{
                 }
 
                 //inverts right hand side
-//                if (c == EQUALS){
-//
-//                }
-
                 if (c == EQUALS){
-                    Stack<Operators> oldOps = ops;
-                    Stack<Double> oldVals = vals;
-                    backCalculate();
+                    ops.push(Operators.SUB);
                     ops.push(Operators.OPEN_PAR);
-                    ops = new Stack<>();
-                    vals = new Stack<>();
-                    Double rightHandSideInverted = -1 * calculate(buffer);
-                    ops = oldOps;
-                    vals = oldVals;
-                    ops.push(Operators.ADD);
-                    ops.push(Operators.OPEN_PAR);
-                    vals.push(rightHandSideInverted);
-                    break; //RHS and LHS are all collapsed
+                    continue;
                 }
 
                 //note the operator
+                Operators op = Operators.assignEnum(Character.toString(c));
+                if (op != null) {
+                    if (ops.peek().orderOfExec > op.orderOfExec
+                            && (op != Operators.OPEN_PAR)){
+                        Operators prevOp = ops.pop();
+                        vals.push(prevOp.calculate());
+                    }
+                    longOp = null;
+                    ops.push(op);
+                    continue;
+                }
+
                 if (longOp == null) longOp = new StringBuilder();
                 longOp.append(c);
-                Operators op = Operators.assignEnum(longOp.toString());
-                if (op == null) continue;
-                if (ops.peek().orderOfExec > op.orderOfExec
-                        && (op != Operators.OPEN_PAR)){
-                    Operators prevOp = ops.pop();
-                    vals.push(prevOp.calculate());
-                }
-                ops.push(op);
-                longOp = null;
             }
         }
 
