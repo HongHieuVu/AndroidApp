@@ -5,13 +5,11 @@ import com.example.myapplication.Exceptions.NoSolution;
 import com.example.myapplication.Experimental.NumInputObserver;
 
 import java.util.EmptyStackException;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Scanner;
 import java.util.Stack;
 import java.util.Timer;
 
-public class Calculator extends Services{
+public class Calculator{
 
     /**
      * enum of all operators
@@ -154,10 +152,6 @@ public class Calculator extends Services{
         vals = new Stack<>();
     }
 
-    /**
-     * get a new calculator object, ensures that only one calculator object will ever be created
-     * @return calculator object
-     */
     public static Calculator getCalculator(){
         if (cal != null) return cal;
         cal = new Calculator();
@@ -300,18 +294,17 @@ public class Calculator extends Services{
     }
 
     /**
-     * Solve equation for one solution of the unknown variable.
-     * @param input the equation string
-     * @return value found
-     * @throws NoSolution if no solution found in time
-     * @throws IllegalOperator if equation string is wrong
-     * @see Calculator#calculate(String input)
+     *
+     * @param input
+     * @return
+     * @throws NoSolution
+     * @throws IllegalOperator
      */
     public Double solve(String input) throws NoSolution, IllegalOperator {
         double tolerance = Math.pow(0.1, 7);  //solution tolerance accepted
         long timeAllowed = 10;     //time tolerated to solve (sec)
-        double startVal = 0.0;     //current x
-        double dx = Math.pow(0.1, 2);       //step size
+        double startVal = 1;     //current x
+        double dx = 0.001;       //step size
         var = startVal;            //set initial variable value
 
         long startTime = System.currentTimeMillis(), currTime, elapsed;
@@ -330,13 +323,18 @@ public class Calculator extends Services{
             //get new x
             var = var - (y / derivative);
 
+            //verify new x
+            if (var == Double.NEGATIVE_INFINITY || var == Double.POSITIVE_INFINITY){
+                var = - startVal * 1.2;
+            }
+
             //update step size
             dx = dx / 2;
 
             //checks if time limit exceeded
             currTime = System.currentTimeMillis();
             elapsed = (currTime - startTime) / 1000; //milisec to sec
-//            System.out.println(y + " " + (Math.abs(y) > tolerance));
+            System.out.println(y + " " + var + " " + (Math.abs(y) > tolerance));
         } while (Math.abs(y) > tolerance && elapsed < timeAllowed);
 
         if (elapsed > timeAllowed)
