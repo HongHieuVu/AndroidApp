@@ -303,7 +303,7 @@ public class Calculator{
     public Double solve(String input) throws NoSolution, IllegalOperator {
         double tolerance = Math.pow(0.1, 7);  //solution tolerance accepted
         long timeAllowed = 10;     //time tolerated to solve (sec)
-        double startVal = 0.0;     //current x
+        double startVal = 1;     //current x
         double dx = Math.pow(0.1, 2);       //step size
         var = startVal;            //set initial variable value
 
