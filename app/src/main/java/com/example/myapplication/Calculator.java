@@ -5,11 +5,13 @@ import com.example.myapplication.Exceptions.NoSolution;
 import com.example.myapplication.Experimental.NumInputObserver;
 
 import java.util.EmptyStackException;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Scanner;
 import java.util.Stack;
 import java.util.Timer;
 
-public class Calculator{
+public class Calculator extends Services{
 
     /**
      * enum of all operators
@@ -152,6 +154,10 @@ public class Calculator{
         vals = new Stack<>();
     }
 
+    /**
+     * get a new calculator object, ensures that only one calculator object will ever be created
+     * @return calculator object
+     */
     public static Calculator getCalculator(){
         if (cal != null) return cal;
         cal = new Calculator();
@@ -185,8 +191,18 @@ public class Calculator{
             if (Character.isDigit(c)) {
 
                 //see if the previous operator is complete
-                if (longOp != null)
-                    throw new IllegalOperator("Illegal operator: " + longOp.toString());
+                if (longOp != null){
+                    Operators op = Operators.assignEnum(longOp.toString());
+                    if (op == null)
+                        throw new IllegalOperator("Illegal operator: " + longOp.toString());
+                    if (ops.peek().orderOfExec > op.orderOfExec
+                            && (op != Operators.OPEN_PAR)){
+                        Operators prevOp = ops.pop();
+                        vals.push(prevOp.calculate());
+                    }
+                    ops.push(op);
+                    longOp = null;
+                }
 
                 //note the number
                 if (number == null) number = new StringBuilder();
@@ -221,38 +237,27 @@ public class Calculator{
                 }
 
                 //inverts right hand side
-//                if (c == EQUALS){
-//
-//                }
-
                 if (c == EQUALS){
-                    Stack<Operators> oldOps = ops;
-                    Stack<Double> oldVals = vals;
-                    backCalculate();
+                    ops.push(Operators.SUB);
                     ops.push(Operators.OPEN_PAR);
-                    ops = new Stack<>();
-                    vals = new Stack<>();
-                    Double rightHandSideInverted = -1 * calculate(buffer);
-                    ops = oldOps;
-                    vals = oldVals;
-                    ops.push(Operators.ADD);
-                    ops.push(Operators.OPEN_PAR);
-                    vals.push(rightHandSideInverted);
-                    break; //RHS and LHS are all collapsed
+                    continue;
                 }
 
                 //note the operator
+                Operators op = Operators.assignEnum(Character.toString(c));
+                if (op != null) {
+                    if (ops.peek().orderOfExec > op.orderOfExec
+                            && (op != Operators.OPEN_PAR)){
+                        Operators prevOp = ops.pop();
+                        vals.push(prevOp.calculate());
+                    }
+                    longOp = null;
+                    ops.push(op);
+                    continue;
+                }
+
                 if (longOp == null) longOp = new StringBuilder();
                 longOp.append(c);
-                Operators op = Operators.assignEnum(longOp.toString());
-                if (op == null) continue;
-                if (ops.peek().orderOfExec > op.orderOfExec
-                        && (op != Operators.OPEN_PAR)){
-                    Operators prevOp = ops.pop();
-                    vals.push(prevOp.calculate());
-                }
-                ops.push(op);
-                longOp = null;
             }
         }
 
@@ -295,11 +300,12 @@ public class Calculator{
     }
 
     /**
-     *
-     * @param input
-     * @return
-     * @throws NoSolution
-     * @throws IllegalOperator
+     * Solve equation for one solution of the unknown variable.
+     * @param input the equation string
+     * @return value found
+     * @throws NoSolution if no solution found in time
+     * @throws IllegalOperator if equation string is wrong
+     * @see Calculator#calculate(String input)
      */
     public Double solve(String input) throws NoSolution, IllegalOperator {
         double tolerance = Math.pow(0.1, 7);  //solution tolerance accepted
@@ -330,7 +336,7 @@ public class Calculator{
             //checks if time limit exceeded
             currTime = System.currentTimeMillis();
             elapsed = (currTime - startTime) / 1000; //milisec to sec
-            System.out.println(y + " " + (Math.abs(y) > tolerance));
+//            System.out.println(y + " " + (Math.abs(y) > tolerance));
         } while (Math.abs(y) > tolerance && elapsed < timeAllowed);
 
         if (elapsed > timeAllowed)
