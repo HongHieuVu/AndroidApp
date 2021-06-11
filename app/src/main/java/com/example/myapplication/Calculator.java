@@ -324,6 +324,11 @@ public class Calculator{
             //get new x
             var = var - (y / derivative);
 
+            //verify new x
+            if (var == Double.NEGATIVE_INFINITY || var == Double.POSITIVE_INFINITY){
+                var = - startVal * 1.2;
+            }
+
             //update step size
             dx = dx / 2;
 
