@@ -185,18 +185,8 @@ public class Calculator{
             if (Character.isDigit(c)) {
 
                 //see if the previous operator is complete
-                if (longOp != null){
-                    Operators op = Operators.assignEnum(longOp.toString());
-                    if (op == null)
-                        throw new IllegalOperator("Illegal operator: " + longOp.toString());
-                    if (ops.peek().orderOfExec > op.orderOfExec
-                            && (op != Operators.OPEN_PAR)){
-                        Operators prevOp = ops.pop();
-                        vals.push(prevOp.calculate());
-                    }
-                    ops.push(op);
-                    longOp = null;
-                }
+                if (longOp != null)
+                    throw new IllegalOperator("Illegal operator: " + longOp.toString());
 
                 //note the number
                 if (number == null) number = new StringBuilder();
@@ -231,27 +221,38 @@ public class Calculator{
                 }
 
                 //inverts right hand side
+//                if (c == EQUALS){
+//
+//                }
+
                 if (c == EQUALS){
-                    ops.push(Operators.SUB);
+                    Stack<Operators> oldOps = ops;
+                    Stack<Double> oldVals = vals;
+                    backCalculate();
                     ops.push(Operators.OPEN_PAR);
-                    continue;
+                    ops = new Stack<>();
+                    vals = new Stack<>();
+                    Double rightHandSideInverted = -1 * calculate(buffer);
+                    ops = oldOps;
+                    vals = oldVals;
+                    ops.push(Operators.ADD);
+                    ops.push(Operators.OPEN_PAR);
+                    vals.push(rightHandSideInverted);
+                    break; //RHS and LHS are all collapsed
                 }
 
                 //note the operator
-                Operators op = Operators.assignEnum(Character.toString(c));
-                if (op != null) {
-                    if (ops.peek().orderOfExec > op.orderOfExec
-                            && (op != Operators.OPEN_PAR)){
-                        Operators prevOp = ops.pop();
-                        vals.push(prevOp.calculate());
-                    }
-                    longOp = null;
-                    ops.push(op);
-                    continue;
-                }
-
                 if (longOp == null) longOp = new StringBuilder();
                 longOp.append(c);
+                Operators op = Operators.assignEnum(longOp.toString());
+                if (op == null) continue;
+                if (ops.peek().orderOfExec > op.orderOfExec
+                        && (op != Operators.OPEN_PAR)){
+                    Operators prevOp = ops.pop();
+                    vals.push(prevOp.calculate());
+                }
+                ops.push(op);
+                longOp = null;
             }
         }
 
@@ -303,8 +304,8 @@ public class Calculator{
     public Double solve(String input) throws NoSolution, IllegalOperator {
         double tolerance = Math.pow(0.1, 7);  //solution tolerance accepted
         long timeAllowed = 10;     //time tolerated to solve (sec)
-        double startVal = 1;     //current x
-        double dx = 0.001;       //step size
+        double startVal = 0.0;     //current x
+        double dx = Math.pow(0.1, 2);       //step size
         var = startVal;            //set initial variable value
 
         long startTime = System.currentTimeMillis(), currTime, elapsed;
@@ -323,18 +324,13 @@ public class Calculator{
             //get new x
             var = var - (y / derivative);
 
-            //verify new x
-            if (var == Double.NEGATIVE_INFINITY || var == Double.POSITIVE_INFINITY){
-                var = - startVal * 1.2;
-            }
-
             //update step size
             dx = dx / 2;
 
             //checks if time limit exceeded
             currTime = System.currentTimeMillis();
             elapsed = (currTime - startTime) / 1000; //milisec to sec
-            System.out.println(y + " " + var + " " + (Math.abs(y) > tolerance));
+            System.out.println(y + " " + (Math.abs(y) > tolerance));
         } while (Math.abs(y) > tolerance && elapsed < timeAllowed);
 
         if (elapsed > timeAllowed)
