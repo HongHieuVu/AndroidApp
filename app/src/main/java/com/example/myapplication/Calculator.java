@@ -172,6 +172,7 @@ public class Calculator{
         return cal;
     }
 
+    //TODO: change return type to string
     /**
      * solve the equation. Calling this method on a double sided equation returns the left hand side
      * minus the right hand side
