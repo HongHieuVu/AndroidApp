@@ -4,7 +4,9 @@ import com.example.myapplication.Exceptions.IllegalOperator;
 import com.example.myapplication.Exceptions.NoSolution;
 import com.example.myapplication.Experimental.NumInputObserver;
 
+import java.util.ArrayList;
 import java.util.EmptyStackException;
+import java.util.List;
 import java.util.Scanner;
 import java.util.Stack;
 import java.util.Timer;
@@ -303,7 +305,7 @@ public class Calculator{
     public Double solve(String input) throws NoSolution, IllegalOperator {
         double tolerance = Math.pow(0.1, 7);  //solution tolerance accepted
         long timeAllowed = 10;     //time tolerated to solve (sec)
-        double startVal = 1;     //current x
+        double startVal = 1;     //starting value of x. Should be close to 1 but acceptable to all functions
         double dx = Math.pow(0.1, 2);       //step size
         var = startVal;            //set initial variable value
 
@@ -334,7 +336,7 @@ public class Calculator{
             //checks if time limit exceeded
             currTime = System.currentTimeMillis();
             elapsed = (currTime - startTime) / 1000; //milisec to sec
-            System.out.println(y + " " + (Math.abs(y) > tolerance));
+//            System.out.println(y + " " + (Math.abs(y) > tolerance));
         } while (Math.abs(y) > tolerance && elapsed < timeAllowed);
 
         if (elapsed > timeAllowed)
