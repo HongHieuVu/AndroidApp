@@ -18,44 +18,59 @@ public class Calculator{
      */
     public enum Operators{
         OPEN_PAR("(", 0), //should have lowest order
-        ADD("+", 0,  (double a, double b) -> a + b),
-        SUB("-", 1, (double a, double b) -> a - b),
-        MUL("*", 2, (double a, double b) -> a * b),
-        DIV("/", 2, (double a, double b) -> a / b),
-        SQRT("sqrt", "Square root", 3,
-                (double ignored, double a) -> {
-            vals.push(ignored);
-            return Math.sqrt(a);}
+        ADD("+", 0,  () -> {
+            double a = vals.pop(), b;
+            if (vals.isEmpty()) b = 0;
+            else b = vals.pop();
+            return a + b;
+        }),
+        SUB("-", 1, () -> {
+            double b = vals.pop(), a;
+            if (vals.isEmpty()) a = 0;
+            else a = vals.pop();
+            return a - b;
+        }),
+        MUL("*", 2, () -> {
+            double a = vals.pop();
+            double b = vals.pop();
+            return a * b;
+        }),
+        DIV("/", 2, () -> {
+            double b = vals.pop();
+            double a = vals.pop();
+            return a / b;
+        }),
+        SQRT("sqrt", "Square root", 3, () -> {
+            return Math.sqrt(vals.pop());}
             ),
-        ABS("|", "Absolute value", 3, (double ignored, double a) -> {
-            vals.push(ignored);
-            return Math.abs(a);}
+        ABS("|", "Absolute value", 3, () -> {
+            return Math.abs(vals.pop());}
             ),
-        LOG("log", "log base a ( a log(b) )", 3,
-                (double a, double b) -> Math.log(b) / Math.log(a)
+        LOG("log", "log base a ( a log(b) )", 3, () -> {
+            double b = vals.pop();
+            double a = vals.pop();
+            return Math.log(b) / Math.log(a);
+        }),
+        NLOG("ln", "ln b (natural logarithm)", 3, () -> {
+            return Math.log(vals.pop());}
             ),
-        NLOG("ln", "ln b (natural logarithm)", 3,
-                (double ignored, double a) -> {
-            vals.push(ignored);
-            return Math.log(a);}
+        EXP("^", "a to the b", 3, () -> {
+            double b = vals.pop();
+            double a = vals.pop();
+            return Math.pow(a, b);
+        }),
+        SIN("sin", 3, () -> {
+            return Math.sin(vals.pop());}
             ),
-        EXP("^", "a to the b", 3,
-                (double a, double b) -> Math.pow(a, b)
+        COS("cos", 3, () -> {
+            return Math.cos(vals.pop());}
             ),
-        SIN("sin", 3, (double ignored, double a) -> {
-            vals.push(ignored);
-            return Math.sin(a);}
-            ),
-        COS("cos", 3, (double ignored, double a) -> {
-            vals.push(ignored);
-            return Math.cos(a);}
-            ),
-        TAN("tan", 3, (double ignored, double a) -> {
-            vals.push(ignored);
+        TAN("tan", 3, () -> {
+            double a = vals.pop();
             return Math.sin(a) / Math.cos(a);}
             ),
-        COT("cot", 3, (double ignored, double a) -> {
-            vals.push(ignored);
+        COT("cot", 3, () -> {
+            double a = vals.pop();
             return Math.cos(a) / Math.sin(a);}
             );
 
@@ -113,11 +128,8 @@ public class Calculator{
          * @return result of calculation
          */
         public Double calculate() {
-            double second = vals.pop(), first;
-            if (vals.isEmpty()) first = 0.0; //infinite zeros
-            else first = vals.pop(); //op must push back sec if it only requires first
             assert this.operation != null;
-            return this.operation.execute(first, second);
+            return this.operation.execute();
         }
 
         public String getOperatorStr(){
