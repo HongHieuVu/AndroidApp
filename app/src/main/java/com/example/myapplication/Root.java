@@ -4,6 +4,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
+/**
+ * purpose of this class is to get a custom equals() method
+ */
 public class Root {
     private final double TOLERANCE = Math.pow(10, -6); //diff from calculator's tolerance
     private double value;

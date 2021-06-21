@@ -10,6 +10,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.example.myapplication.CrossServiceActions.Calculate;
+import com.example.myapplication.CrossServiceActions.GetCalculatorInstruction;
+import com.example.myapplication.CrossServiceActions.SolveEquation;
 import com.example.myapplication.Exceptions.IllegalOperator;
 import com.example.myapplication.Exceptions.NoSolution;
 import com.example.myapplication.Exceptions.NotAnEquation;
@@ -33,7 +36,6 @@ public class MainActivity extends AppCompatActivity {
     EditText numInput;
     Button calculate;
     TextView result;
-    Calculator calculator;
     Modes calculatorMode = Modes.CALCULATING;
 
     //TODO: add system of equations function
@@ -48,10 +50,9 @@ public class MainActivity extends AppCompatActivity {
         calculate = findViewById(R.id.calculate);
         result = findViewById(R.id.result);
 
-        calculator = Calculator.getCalculator();
-
-        userGuide.setText(calculator.listAllSpecialOps());
+        userGuide.setText(new GetCalculatorInstruction().getResult());
         result.setText(R.string.resultPrompt);
+
         numInput.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -59,7 +60,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 String input = numInput.getText().toString();
-//                if (eqWithVar(input)) calculatorMode = Modes.EQ_SOLVING;
                 if (input.indexOf('=') != -1) calculatorMode = Modes.EQ_SOLVING;
                 else calculatorMode = Modes.CALCULATING;
                 calculate.setText(
@@ -73,21 +73,10 @@ public class MainActivity extends AppCompatActivity {
 
         calculate.setOnClickListener(v -> {
             String input = numInput.getText().toString();
-            try {
-                Double calcResult;
-                if (calculatorMode.isCalculateMode())
-                    result.setText(String.format("%.5f", calculator.calculate(input)));
-                else
-                result.setText(calculator.solveAll(input));
-            } catch (IllegalOperator | NoSolution error) {
-                String message = error.getMessage();
-                result.setText(message);
-            } catch (EmptyStackException emptyStackException){
-                result.setText(R.string.wrongArithmatic);
-            } catch (NotAnEquation notAnEquation) {
-                result.setText(notAnEquation.getMessage());
-                notAnEquation.printStackTrace();
-            }
+            if (calculatorMode.isCalculateMode())
+                result.setText(new Calculate(input).getResult());
+            else
+                result.setText(new SolveEquation(input).getResult());
         });
     }
 

@@ -391,6 +391,8 @@ public class Calculator{
             //checks if time limit exceeded
             currTime = System.currentTimeMillis();
             elapsed = (currTime - startTime) / 1000; //milisec to sec
+
+            //TODO: delete this debugger
             System.out.println(" var: " + var +
                     " continue? " + (Math.abs(y) > tolerance) +
                     " time elapsed: " + elapsed +
@@ -443,6 +445,7 @@ public class Calculator{
 
         if (roots.isEmpty()) throw new NoSolution("Found no solution");
 
+        //TODO: delete this debugger
         System.out.println(roots.toString());
         System.out.println(maxDeg);
 
