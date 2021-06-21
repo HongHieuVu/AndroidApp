@@ -12,6 +12,7 @@ import android.widget.TextView;
 
 import com.example.myapplication.Exceptions.IllegalOperator;
 import com.example.myapplication.Exceptions.NoSolution;
+import com.example.myapplication.Exceptions.NotAnEquation;
 
 import java.util.EmptyStackException;
 
@@ -35,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
     Calculator calculator;
     Modes calculatorMode = Modes.CALCULATING;
 
+    //TODO: add system of equations function
     @SuppressLint("DefaultLocale")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
         calculator = Calculator.getCalculator();
 
         userGuide.setText(calculator.listAllSpecialOps());
-        result.setText(String.format("%-6s", "result"));
+        result.setText(R.string.resultPrompt);
         numInput.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -57,7 +59,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 String input = numInput.getText().toString();
-                if (eqWithVar(input)) calculatorMode = Modes.EQ_SOLVING;
+//                if (eqWithVar(input)) calculatorMode = Modes.EQ_SOLVING;
+                if (input.indexOf('=') != -1) calculatorMode = Modes.EQ_SOLVING;
                 else calculatorMode = Modes.CALCULATING;
                 calculate.setText(
                         calculatorMode == Modes.EQ_SOLVING ? R.string.Solve : R.string.calculate
@@ -73,23 +76,22 @@ public class MainActivity extends AppCompatActivity {
             try {
                 Double calcResult;
                 if (calculatorMode.isCalculateMode())
-                    calcResult = calculator.calculate(input);
+                    result.setText(String.format("%.5f", calculator.calculate(input)));
                 else
-                    calcResult = calculator.solve(input);
-                result.setText(String.format("%.7f", calcResult));
+                result.setText(calculator.solveAll(input));
             } catch (IllegalOperator | NoSolution error) {
                 String message = error.getMessage();
                 result.setText(message);
             } catch (EmptyStackException emptyStackException){
                 result.setText(R.string.wrongArithmatic);
+            } catch (NotAnEquation notAnEquation) {
+                result.setText(notAnEquation.getMessage());
+                notAnEquation.printStackTrace();
             }
         });
     }
 
-    private boolean eqWithVar(String inputLine){
-        for (int i = 0; i < inputLine.length(); i++){
-            if (inputLine.charAt(i) == '=') return true;
-        }
-        return false;
+    public void announce(String announcement){
+
     }
 }

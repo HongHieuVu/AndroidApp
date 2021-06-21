@@ -5,4 +5,5 @@
     <string name="enter_equation">Enter equation</string>
     <string name="Solve">Solve</string>
     <string name="wrongArithmatic">Wrong Arithmetic</string>
+    <string name="resultPrompt">result</string>
 </resources>

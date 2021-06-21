@@ -2,22 +2,37 @@ package com.example.myapplication;
 
 import com.example.myapplication.Exceptions.IllegalOperator;
 import com.example.myapplication.Exceptions.NoSolution;
+import com.example.myapplication.Exceptions.NotAnEquation;
 import com.example.myapplication.Experimental.NumInputObserver;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.EmptyStackException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Scanner;
 import java.util.Stack;
 import java.util.Timer;
 
 public class Calculator{
+    //text parsing constants
+    private final char CLOSE_PAR = ')'; //close par is the calculate order
+    private final char SPACE = ' ';
+    private final char END_ABS = '|';
+    private final char DECIMAL_POINT_ENG = '.';
+    private final char VARIABLE = 'x';
+    private final char EQUALS = '=';
+
+    public static final double TOLERANCE = Math.pow(10, -7);
 
     /**
      * enum of all operators
      */
     public enum Operators{
+        //special operators (non-mathematical)
         OPEN_PAR("(", 0), //should have lowest order
+
+        //mathematical operators
         ADD("+", 0,  () -> {
             double a = vals.pop(), b;
             if (vals.isEmpty()) b = 0;
@@ -57,6 +72,10 @@ public class Calculator{
         EXP("^", "a to the b", 3, () -> {
             double b = vals.pop();
             double a = vals.pop();
+            if (complexDeg) deg += b; //if this is exponent of a variable
+            complexDeg = false;
+            if (deg > maxDeg) maxDeg = deg;
+            deg = 0;
             return Math.pow(a, b);
         }),
         SIN("sin", 3, () -> {
@@ -149,17 +168,19 @@ public class Calculator{
         }
     }
 
-    private final char CLOSE_PAR = ')'; //close par is the calculate order
-    private final char SPACE = ' ';
-    private final char END_ABS = '|';
-    private final char DECIMAL_POINT_ENG = '.';
-    private final char VARIABLE = 'x';
-    private final char EQUALS = '=';
-
     private static Calculator cal;
     private static Stack<Operators> ops;
     private static Stack<Double> vals;
-    private static double var = 0.12;
+
+    //starting value of x in solve() method. Should be close to 1 but within domain of all operators
+    private static double startVal = 1;
+    private static double var = 0.12; //what gets inserted in place of a variable
+    private static double DEFAULT_START_VAL = 1;
+
+    //get the degree of the equation
+    private static double maxDeg = 0;
+    private static double deg = 0;
+    private static boolean complexDeg = false;
 
     private Calculator(){
         ops = new Stack<>();
@@ -172,10 +193,8 @@ public class Calculator{
         return cal;
     }
 
-    //TODO: change return type to string
     /**
-     * solve the equation. Calling this method on a double sided equation returns the left hand side
-     * minus the right hand side
+     * solve the equation. The part on the right hand side of an equation will be inverted.
      * @param input input equation
      * @return the result
      * @throws IllegalOperator when there's an operator unfamiliar to the calculator in the equation
@@ -186,6 +205,7 @@ public class Calculator{
         vals.push(0.0); //so that one arg ops have something to pop if they come first
         ops.clear();
         ops.push(Operators.OPEN_PAR); //to simplify backCalc method
+        deg = 0;
 
         String buffer = input;
         StringBuilder longOp = null; //long operators are operators with more than one char
@@ -242,11 +262,22 @@ public class Calculator{
                 //inserts variable
                 if (c == VARIABLE){
                     vals.push(var);
+                    if (buffer.charAt(0) == Operators.EXP.operatorStr.charAt(0)){
+                        complexDeg = true;
+                        continue;
+                    }
+                    deg ++;
+                    if (deg > maxDeg) maxDeg = deg;
+                    deg = 0;    //reset after use
                     continue;
                 }
 
                 //inverts right hand side
                 if (c == EQUALS){
+                    while (!ops.isEmpty()){
+                        backCalculate();
+                    }
+                    ops.push(Operators.OPEN_PAR);
                     ops.push(Operators.SUB);
                     ops.push(Operators.OPEN_PAR);
                     continue;
@@ -309,21 +340,23 @@ public class Calculator{
     }
 
     /**
-     *
-     * @param input
-     * @return
-     * @throws NoSolution
-     * @throws IllegalOperator
+     * Solves for a new root of an equation
+     * @param input equation to solve
+     * @return the root, null if no more root can be found
+     * @throws NoSolution if no solution found after an amount of time (10 sec)
+     * @throws IllegalOperator if an undefined operator is found, or operators doesn't make mathematical
+     * sense
      */
-    public Double solve(String input) throws NoSolution, IllegalOperator {
-        double tolerance = Math.pow(0.1, 7);  //solution tolerance accepted
-        long timeAllowed = 10;     //time tolerated to solve (sec)
-        double startVal = 1;     //starting value of x. Should be close to 1 but acceptable to all functions
-        double dx = Math.pow(0.1, 2);       //step size
+    private Double solve(String input, List<Root> knownRoots) throws NoSolution, IllegalOperator {
+        double tolerance = TOLERANCE;  //solution tolerance accepted
+        long timeAllowed = 2;     //time tolerated to solve (sec)
+        int trialsAllowed = 3;      //times hitting a known root before aborting
+        double dx = 0.001;          //step size
         var = startVal;            //set initial variable value
 
         long startTime = System.currentTimeMillis(), currTime, elapsed;
 
+        int trial = 1;
         double y;
         double derivative;
         do {
@@ -335,12 +368,21 @@ public class Calculator{
             double dy = calculate(input) - y; //result of calculate has changed since var changed
             derivative = dy / dx;
 
-            //get new x
+            //update x
             var = var - (y / derivative);
 
             //verify new x
             if (var == Double.NEGATIVE_INFINITY || var == Double.POSITIVE_INFINITY){
-                var = - startVal * 1.2;
+                startVal = - startVal * 1.2;
+                var = startVal;
+            }
+
+            //trial
+            if (knownRoots.contains(new Root(var))){
+                trial++;
+                if (trial > trialsAllowed) return null;
+                startVal = - startVal * 1.2;
+                var = startVal;
             }
 
             //update step size
@@ -349,13 +391,68 @@ public class Calculator{
             //checks if time limit exceeded
             currTime = System.currentTimeMillis();
             elapsed = (currTime - startTime) / 1000; //milisec to sec
-//            System.out.println(y + " " + (Math.abs(y) > tolerance));
+            System.out.println(" var: " + var +
+                    " continue? " + (Math.abs(y) > tolerance) +
+                    " time elapsed: " + elapsed +
+                    " known? " + knownRoots.contains(new Root(var)) +
+                    " trial: " + trial);
         } while (Math.abs(y) > tolerance && elapsed < timeAllowed);
 
         if (elapsed > timeAllowed)
             throw new NoSolution("No solution found in reasonable time");
 
+        startVal = DEFAULT_START_VAL;
         return var;
+    }
+
+    /**
+     * get all roots possible from an equation, to the best that this tuned calculator can find.
+     * NO GUARANTEE THAT THIS METHOD CAN FIND ALL ROOTS due to the mathematical limitations of
+     * the Newton-Raphson method, this is best effort.
+     * @param input equation to solve
+     * @return string representation of all roots found
+     * @throws NotAnEquation when input is not an equation
+     * @throws NoSolution when no solution found within reasonable time
+     * @throws IllegalOperator an illegal operator is found
+     */
+    public String solveAll(String input) throws NotAnEquation, NoSolution, IllegalOperator {
+        if (input.indexOf(VARIABLE) == -1) throw new NotAnEquation("This is not an equation with variable");
+
+        List<Root> roots = new ArrayList<>();
+
+        //loop through solve() to find those roots
+        long startTime = System.currentTimeMillis(), currTime, elapsed;
+        double timeAllowed = 5;
+        Double newRoot;
+        do {
+
+            //find new root
+            newRoot = solve(input, roots);
+            if (newRoot == null) break;
+            roots.add(new Root(newRoot));
+            System.out.println("Added: " + newRoot);
+
+            //change startVal to avoid stepping into known val
+            startVal = -1.2 * startVal;
+
+            //check time
+            currTime = System.currentTimeMillis();
+            elapsed = (currTime - startTime) / 1000; //milisec to sec
+
+        } while (roots.size() < maxDeg && elapsed < timeAllowed);
+
+        if (roots.isEmpty()) throw new NoSolution("Found no solution");
+
+        System.out.println(roots.toString());
+        System.out.println(maxDeg);
+
+        //constructs response:
+        StringBuilder response = new StringBuilder();
+        for (int i = 0; i < roots.size(); i++){
+            response.append(String.format(Locale.US,"root %o: %.5f\n", i, roots.get(i).getValue()));
+        }
+
+        return response.toString();
     }
 
     /**
