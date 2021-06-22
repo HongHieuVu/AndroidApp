@@ -28,7 +28,7 @@ public class Calculator{
     /**
      * enum of all operators
      */
-    public enum Operators{
+    public enum Operators {
         //special operators (non-mathematical)
         OPEN_PAR("(", 0), //should have lowest order
 
@@ -168,6 +168,7 @@ public class Calculator{
         }
     }
 
+    //operator and values stack
     private static Calculator cal;
     private static Stack<Operators> ops;
     private static Stack<Double> vals;
@@ -187,6 +188,11 @@ public class Calculator{
         vals = new Stack<>();
     }
 
+    /**
+     * get a calculator instance
+     * @return a new calculator if no calculator has ever been created,
+     * else return the previously created calculator instance (Singleton)
+     */
     public static Calculator getCalculator(){
         if (cal != null) return cal;
         cal = new Calculator();
@@ -435,7 +441,7 @@ public class Calculator{
             System.out.println("Added: " + newRoot);
 
             //change startVal to avoid stepping into known val
-            startVal = -1.2 * startVal;
+            startVal = -1.2 * newRoot;
 
             //check time
             currTime = System.currentTimeMillis();

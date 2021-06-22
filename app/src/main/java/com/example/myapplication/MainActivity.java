@@ -2,7 +2,6 @@ package com.example.myapplication;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -11,13 +10,9 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.example.myapplication.CrossServiceActions.Calculate;
+import com.example.myapplication.CrossServiceActions.Autofill;
 import com.example.myapplication.CrossServiceActions.GetCalculatorInstruction;
 import com.example.myapplication.CrossServiceActions.SolveEquation;
-import com.example.myapplication.Exceptions.IllegalOperator;
-import com.example.myapplication.Exceptions.NoSolution;
-import com.example.myapplication.Exceptions.NotAnEquation;
-
-import java.util.EmptyStackException;
 
 public class MainActivity extends AppCompatActivity {
     enum Modes{
@@ -39,7 +34,6 @@ public class MainActivity extends AppCompatActivity {
     Modes calculatorMode = Modes.CALCULATING;
 
     //TODO: add system of equations function
-    @SuppressLint("DefaultLocale")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,11 +54,24 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 String input = numInput.getText().toString();
+
+                //checks whether input is now an equation
                 if (input.indexOf('=') != -1) calculatorMode = Modes.EQ_SOLVING;
                 else calculatorMode = Modes.CALCULATING;
                 calculate.setText(
                         calculatorMode == Modes.EQ_SOLVING ? R.string.Solve : R.string.calculate
                 );
+
+                //autofill operator for user
+                if (input.length() != 0){
+                    char newChar = input.charAt(input.length() - 1);
+                    String filler = new Autofill(newChar).getResult();
+                    if (filler != null) {
+                        String newText = input + filler;
+                        numInput.setText(newText);
+                        numInput.setSelection(newText.length()); //set cursor
+                    }
+                }
             }
 
             @Override
@@ -78,9 +85,5 @@ public class MainActivity extends AppCompatActivity {
             else
                 result.setText(new SolveEquation(input).getResult());
         });
-    }
-
-    public void announce(String announcement){
-
     }
 }
