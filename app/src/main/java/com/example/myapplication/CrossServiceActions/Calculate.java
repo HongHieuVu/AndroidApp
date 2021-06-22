@@ -10,6 +10,7 @@ public class Calculate extends Actions {
     public Calculate(String input){
         setResult(() -> {
             Calculator calculator = Calculator.getCalculator();
+            if (calculator == null) return "";
             try {
                 return String.format(Locale.US,"%.5f", calculator.calculate(input));
             } catch (IllegalOperator illegalOperator) {

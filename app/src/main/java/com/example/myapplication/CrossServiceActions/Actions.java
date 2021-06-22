@@ -5,15 +5,19 @@ package com.example.myapplication.CrossServiceActions;
  * Exception handling and result formatting are delegated to this hierarchy tree in the subclasses.
  */
 public abstract class Actions {
-    private String result;
-    MessageEffect postActionEffect;
+     String result;
+    protected MessageEffect postActionEffect;
 
     protected void setResult(MessageEffect messageEffect){
        result = messageEffect.send();
     }
 
-    protected void setPostActions(MessageEffect messageEffect){
-        messageEffect.send();
+    protected void setPostAction(MessageEffect messageEffect){
+        postActionEffect = messageEffect;
+    }
+
+    private void doPostActions(){
+        postActionEffect.send();
     }
 
     /**
@@ -21,7 +25,7 @@ public abstract class Actions {
      * @return result string
      */
     public String getResult(){
-        if (postActionEffect != null) setPostActions(postActionEffect);
+        if (postActionEffect != null) doPostActions();
         return result;
     }
 }

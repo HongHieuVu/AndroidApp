@@ -14,6 +14,9 @@ import java.util.Scanner;
 import java.util.Stack;
 import java.util.Timer;
 
+/**
+ * provides calculation and equation solving services. Class written with multithreading in mind.
+ */
 public class Calculator{
     //text parsing constants
     private final char CLOSE_PAR = ')'; //close par is the calculate order
@@ -173,6 +176,9 @@ public class Calculator{
     private static Stack<Operators> ops;
     private static Stack<Double> vals;
 
+    //multithreading trick
+    private static boolean busy = false; //set to true when any calculation is happening
+
     //starting value of x in solve() method. Should be close to 1 but within domain of all operators
     private static double startVal = 1;
     private static double var = 0.12; //what gets inserted in place of a variable
@@ -191,10 +197,15 @@ public class Calculator{
     /**
      * get a calculator instance
      * @return a new calculator if no calculator has ever been created,
-     * else return the previously created calculator instance (Singleton)
+     * else return the previously created calculator instance (Singleton).
+     * If multiple threads are trying to create a calculator, only the first will get and all
+     * calculator request while it's busy will be met with null.
      */
     public static Calculator getCalculator(){
-        if (cal != null) return cal;
+        if (cal != null){
+            if (busy) return null;
+            return cal;
+        }
         cal = new Calculator();
         return cal;
     }
@@ -207,6 +218,7 @@ public class Calculator{
      * @see Calculator#backCalculate()
      */
     public Double calculate(String input) throws IllegalOperator, EmptyStackException {
+        busy = true;
         vals.clear();
         vals.push(0.0); //so that one arg ops have something to pop if they come first
         ops.clear();
@@ -317,6 +329,7 @@ public class Calculator{
         while (!ops.isEmpty()){
             backCalculate();
         }
+        busy = false;
         return vals.pop();
     }
 
@@ -353,7 +366,7 @@ public class Calculator{
      * @throws IllegalOperator if an undefined operator is found, or operators doesn't make mathematical
      * sense
      */
-    private Double solve(String input, List<Root> knownRoots) throws NoSolution, IllegalOperator {
+    private Double solve(String input, List<Root> knownRoots) throws NoSolution, IllegalOperator, EmptyStackException {
         double tolerance = TOLERANCE;  //solution tolerance accepted
         long timeAllowed = 2;     //time tolerated to solve (sec)
         int trialsAllowed = 3;      //times hitting a known root before aborting
@@ -363,12 +376,9 @@ public class Calculator{
         long startTime = System.currentTimeMillis(), currTime, elapsed;
 
         int trial = 1;
-        double y;
+        double y = calculate(input);
         double derivative;
-        do {
-            //get value of y(x) at current x
-            y = calculate(input);
-
+        while (Math.abs(y) > tolerance){
             //calculate derivative at current x
             var += dx;
             double dy = calculate(input) - y; //result of calculate has changed since var changed
@@ -383,7 +393,7 @@ public class Calculator{
                 var = startVal;
             }
 
-            //trial
+            //trial limit check
             if (knownRoots.contains(new Root(var))){
                 trial++;
                 if (trial > trialsAllowed) return null;
@@ -397,17 +407,21 @@ public class Calculator{
             //checks if time limit exceeded
             currTime = System.currentTimeMillis();
             elapsed = (currTime - startTime) / 1000; //milisec to sec
+            if (elapsed > timeAllowed)
+                throw new NoSolution("No solution found in reasonable time");
+
+            //get value of y(x) at current x
+            y = calculate(input);
 
             //TODO: delete this debugger
-            System.out.println(" var: " + var +
+            System.out.println(
+                    " dy: " + y +
+                    " var: " + var +
                     " continue? " + (Math.abs(y) > tolerance) +
                     " time elapsed: " + elapsed +
                     " known? " + knownRoots.contains(new Root(var)) +
                     " trial: " + trial);
-        } while (Math.abs(y) > tolerance && elapsed < timeAllowed);
-
-        if (elapsed > timeAllowed)
-            throw new NoSolution("No solution found in reasonable time");
+        }
 
         startVal = DEFAULT_START_VAL;
         return var;
@@ -423,7 +437,8 @@ public class Calculator{
      * @throws NoSolution when no solution found within reasonable time
      * @throws IllegalOperator an illegal operator is found
      */
-    public String solveAll(String input) throws NotAnEquation, NoSolution, IllegalOperator {
+    public String solveAll(String input) throws NotAnEquation, NoSolution, IllegalOperator, EmptyStackException {
+        busy = true;
         if (input.indexOf(VARIABLE) == -1) throw new NotAnEquation("This is not an equation with variable");
 
         List<Root> roots = new ArrayList<>();
@@ -461,6 +476,7 @@ public class Calculator{
             response.append(String.format(Locale.US,"root %o: %.5f\n", i, roots.get(i).getValue()));
         }
 
+        busy = false;
         return response.toString();
     }
 

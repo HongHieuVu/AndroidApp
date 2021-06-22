@@ -16,7 +16,7 @@ import com.example.myapplication.CrossServiceActions.SolveEquation;
 
 public class MainActivity extends AppCompatActivity {
     enum Modes{
-        CALCULATING, EQ_SOLVING;
+        CALCULATING, EQ_SOLVING, DIFFERENTIAL_EQ;
 
         public boolean isSolvingMode(){
             return this == Modes.EQ_SOLVING;
@@ -24,6 +24,10 @@ public class MainActivity extends AppCompatActivity {
 
         public boolean isCalculateMode(){
             return this == Modes.CALCULATING;
+        }
+
+        public boolean isDiffEqSolving(){
+            return this == Modes.DIFFERENTIAL_EQ;
         }
     }
 
@@ -55,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 String input = numInput.getText().toString();
 
-                //checks whether input is now an equation
+                //checks whether input is now an equation to change mode
                 if (input.indexOf('=') != -1) calculatorMode = Modes.EQ_SOLVING;
                 else calculatorMode = Modes.CALCULATING;
                 calculate.setText(
@@ -80,10 +84,19 @@ public class MainActivity extends AppCompatActivity {
 
         calculate.setOnClickListener(v -> {
             String input = numInput.getText().toString();
-            if (calculatorMode.isCalculateMode())
-                result.setText(new Calculate(input).getResult());
-            else
-                result.setText(new SolveEquation(input).getResult());
+            StringBuilder res = new StringBuilder();
+            new Thread(() -> {
+                //calculate with corresponding mode
+                if (calculatorMode.isCalculateMode())
+                    res.append(new Calculate(input).getResult());
+                else
+                    res.append(new SolveEquation(input).getResult());
+
+                //update result view
+                runOnUiThread(() -> {
+                    if (res.length() != 0) result.setText(res.toString());
+                });
+            }).start();
         });
     }
 }
