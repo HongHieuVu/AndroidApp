@@ -19,3 +19,5 @@ Some cool things:
 - If a service's API changes, there's only one place that needs to change and that is the use of that service in the respective action class. No need to re-write controller (service user). All consequences of a service's API change is in one place, no matter how many classes use that API.
 - The action is already performed by the time it is created, result is stored in the action, and the service user only needs to peek inside the message to get the result. (automation)
 - All services needs to be Singleton to save memory.
+- Actions can set other actions to be done after this action is done (set post-actions). (looping actions is ok)
+- There can be stand-alone actions that doesn't belong to any services (doesn't use any service API). This is permissible.
