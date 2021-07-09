@@ -5,7 +5,7 @@ package com.example.myapplication.CrossServiceActions;
  * Exception handling and result formatting are delegated to this hierarchy tree in the subclasses.
  */
 public abstract class Actions {
-     String result;
+    String result;
     protected MessageEffect postActionEffect;
 
     protected void setResult(MessageEffect messageEffect){

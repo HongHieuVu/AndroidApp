@@ -15,6 +15,7 @@
         android:gravity="center"
         android:padding="16dp">
         <LinearLayout
+            android:id="@+id/linearLayout1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
@@ -40,16 +41,32 @@
 
             </ScrollView>
 
-            <EditText
-                android:id="@+id/numInput"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:gravity="center"
-                android:inputType="text"
-                android:textSize="30sp"
-                android:hint="@string/enter_equation"
-                tools:ignore="LabelFor">
-            </EditText>
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/numInput"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="0.89"
+                    android:autofillHints="Equation"
+                    android:gravity="center"
+                    android:hint="@string/enter_equation"
+                    android:inputType="text"
+                    android:textSize="30sp"
+                    tools:ignore="LabelFor" />
+
+                <Button
+                    android:id="@+id/moreEquation"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="0.11"
+                    android:text="@string/MoreEquations" />
+
+            </LinearLayout>
+
             <Button
                 android:id="@+id/calculate"
                 android:layout_width="match_parent"

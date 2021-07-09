@@ -3,16 +3,13 @@ package com.example.myapplication;
 import com.example.myapplication.Exceptions.IllegalOperator;
 import com.example.myapplication.Exceptions.NoSolution;
 import com.example.myapplication.Exceptions.NotAnEquation;
-import com.example.myapplication.Experimental.NumInputObserver;
 
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.EmptyStackException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
 import java.util.Stack;
-import java.util.Timer;
 
 /**
  * provides calculation and equation solving services. Class written with multithreading in mind.
@@ -27,6 +24,7 @@ public class Calculator{
     private final char EQUALS = '=';
 
     public static final double TOLERANCE = Math.pow(10, -7);
+    private static boolean endAbs = false;
 
     /**
      * enum of all operators
@@ -34,6 +32,8 @@ public class Calculator{
     public enum Operators {
         //special operators (non-mathematical)
         OPEN_PAR("(", 0), //should have lowest order
+        ABS("|", "Absolute value", 0,() -> null
+        ),
 
         //mathematical operators
         ADD("+", 0,  () -> {
@@ -43,10 +43,12 @@ public class Calculator{
             return a + b;
         }),
         SUB("-", 1, () -> {
-            double b = vals.pop(), a;
-            if (vals.isEmpty()) a = 0;
-            else a = vals.pop();
-            return a - b;
+            if (!ops.isEmpty()
+                    && ops.peek() != OPEN_PAR
+                    && ops.peek() != ABS
+                    && ops.peek() != ADD)
+                ops.push(ADD);
+            return -1 * vals.pop();
         }),
         MUL("*", 2, () -> {
             double a = vals.pop();
@@ -60,9 +62,6 @@ public class Calculator{
         }),
         SQRT("sqrt", "Square root", 3, () -> {
             return Math.sqrt(vals.pop());}
-            ),
-        ABS("|", "Absolute value", 3, () -> {
-            return Math.abs(vals.pop());}
             ),
         LOG("log", "log base a ( a log(b) )", 3, () -> {
             double b = vals.pop();
@@ -264,6 +263,30 @@ public class Calculator{
                     continue;
                 }
 
+                //inserts variable
+                if (c == VARIABLE){
+
+                    //allows skipping the multiplication sign in front of a variable
+                    if (number != null){
+                        Scanner numScnr = new Scanner(number.toString());
+                        vals.push(numScnr.nextDouble());
+                        number = null;
+                        ops.push(Operators.MUL);
+                    }
+
+                    vals.push(var);
+
+                    //note the equation degree
+                    if (!buffer.isEmpty() && buffer.charAt(0) == Operators.EXP.operatorStr.charAt(0)){
+                        complexDeg = true;
+                        continue;
+                    }
+                    deg ++;
+                    if (deg > maxDeg) maxDeg = deg;
+                    deg = 0;    //reset after use
+                    continue;
+                }
+
                 //builds the number right before the operator
                 if (number != null){
                     Scanner numScnr = new Scanner(number.toString());
@@ -273,20 +296,19 @@ public class Calculator{
 
                 //calculate
                 if (c == CLOSE_PAR | c == END_ABS) {
-                    backCalculate();
-                    continue;
-                }
-
-                //inserts variable
-                if (c == VARIABLE){
-                    vals.push(var);
-                    if (buffer.charAt(0) == Operators.EXP.operatorStr.charAt(0)){
-                        complexDeg = true;
+                    if (c == END_ABS){
+                        if (endAbs) {
+                            backCalculate(); //TODO: we need another calculate function for this op
+                            endAbs = false;
+                        }
+                        else {
+                            endAbs = true;
+                            ops.push(Operators.ABS);
+                        }
                         continue;
                     }
-                    deg ++;
-                    if (deg > maxDeg) maxDeg = deg;
-                    deg = 0;    //reset after use
+
+                    backCalculate();
                     continue;
                 }
 
@@ -305,7 +327,8 @@ public class Calculator{
                 Operators op = Operators.assignEnum(Character.toString(c));
                 if (op != null) {
                     if (ops.peek().orderOfExec > op.orderOfExec
-                            && (op != Operators.OPEN_PAR)){
+                            && (op != Operators.OPEN_PAR)
+                            && (op != Operators.ABS)){
                         Operators prevOp = ops.pop();
                         vals.push(prevOp.calculate());
                     }
@@ -340,21 +363,17 @@ public class Calculator{
      * operator will be executed first to flatten out order.
      */
     private void backCalculate(){
-        while (ops.peek() != Operators.OPEN_PAR){
+        while (ops.peek() != Operators.OPEN_PAR && ops.peek() != Operators.ABS){
             Operators op = ops.pop();
             if (ops.peek().orderOfExec > op.orderOfExec){
-                if (ops.peek() == Operators.SUB){
-                    double tmp = vals.pop();
-                    Operators prevOp = ops.pop();
-                    vals.push(prevOp.calculate());
-                    vals.push(tmp);
-                } else {
-                    Operators prevOp = ops.pop();
-                    vals.push(prevOp.calculate());
-                }
+                double tmp = vals.pop();
+                Operators prevOp = ops.pop();
+                vals.push(prevOp.calculate());
+                vals.push(tmp);
             }
             vals.push(op.calculate());
         }
+        if (ops.peek() == Operators.ABS) vals.push(Math.abs(vals.pop())); //TODO: check out this check
         ops.pop(); //removes open par
     }
 

@@ -17,35 +17,49 @@ public class Autofill extends Actions{
     List<Calculator.Operators> matchList = new LinkedList<>();
 
     /**
-     * get what needed to complete an operator, action result is null if no autofill can be done.
-     * @param newChar character the user just entered
+     * auto complete the equation, action result is null if no autofill can be done.
+     * @param equation the current unfinished equation
      */
-    public Autofill(char newChar){
+    public Autofill(String equation){
         setResult(() -> {
-            String operatorRep;
-            for (Calculator.Operators op: Calculator.Operators.values()) {
-                operatorRep = op.getOperatorStr();
+            if (equation.length() != 0){
+                return equation + getFiller(equation.charAt(equation.length() - 1));
+            }
+            return equation;
+        });
+    }
 
-                if (operatorRep.length() == 1) continue; //nothing to fill
+    /**
+     * get what's left to get an operator
+     * @param newChar character user has just entered
+     * @return what's left to be filled, null if nothing can be filled
+     */
+    private String getFiller(char newChar){
+        if (Character.isDigit(newChar)) return ""; //no operator begins with a digit
 
-                if (canAutofill){
-                    if (operatorRep.charAt(1) == newChar &&
-                            operatorRep.charAt(0) == lastChar) {
-                        matchList.add(op);
-                    }
-                    continue;
+        String operatorRep;
+        for (Calculator.Operators op: Calculator.Operators.values()) {
+            operatorRep = op.getOperatorStr();
+
+            if (operatorRep.length() == 1) continue; //nothing to fill
+
+            if (canAutofill){
+                if (operatorRep.charAt(1) == newChar &&
+                        operatorRep.charAt(0) == lastChar) {
+                    matchList.add(op);
                 }
-
-                if (operatorRep.charAt(0) == newChar){
-                    canAutofill = true;
-                    lastChar = newChar;
-                    break;
-                }
+                continue;
             }
 
-            if (matchList.size() != 1) return null;
-            canAutofill = false;
-            return matchList.get(0).getOperatorStr().substring(2); //omits first 2 characters
-        });
+            if (operatorRep.charAt(0) == newChar){
+                canAutofill = true;
+                lastChar = newChar;
+                break;
+            }
+        }
+
+        if (matchList.size() != 1) return "";
+        canAutofill = false;
+        return matchList.get(0).getOperatorStr().substring(2); //omits first 2 characters
     }
 }
