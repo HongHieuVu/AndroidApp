@@ -21,3 +21,5 @@ Some cool things:
 - All services needs to be Singleton to save memory.
 - Actions can set other actions to be done after this action is done (set post-actions). (chaining actions is not recommended)
 - There can be stand-alone actions that doesn't belong to any services (doesn't use any service API). This is permissible.
+
+Finally, this app is multi-thread :D
