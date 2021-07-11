@@ -3,6 +3,8 @@ package com.example.myapplication;
 import com.example.myapplication.Exceptions.IllegalOperator;
 import com.example.myapplication.Exceptions.NoSolution;
 import com.example.myapplication.Exceptions.NotAnEquation;
+import com.example.myapplication.Exceptions.OverShootNegative;
+import com.example.myapplication.Exceptions.OverShootPositive;
 
 import java.util.ArrayList;
 import java.util.EmptyStackException;
@@ -30,7 +32,6 @@ public class Calculator {
      */
     public enum Operators {
         //special operators (non-mathematical)
-        START(null, -1), //denotes start of calculation
         PAR("(", -1), //should have lowest order
         ABS("|", "Absolute value", -1, () -> null
         ),
@@ -38,23 +39,16 @@ public class Calculator {
         //mathematical operators
         ADD("+", -1, () -> {
             double a = vals.pop(), b;
-            if (vals.isEmpty() || ops.peek() == PAR || ops.peek() == ABS)
+            if (vals.isEmpty())
                 b = 0;
             else b = vals.pop();
             return a + b;
         }),
-//        SUB("-", 0, () -> {
-//            double b = vals.pop(), a;
-//            if (vals.isEmpty() || ops.peek() == ABS) a = 0; //behaves like INVERT at the beginning of expressions
-//            else a = vals.pop();
-//            return a - b;
-//        }),
         SUB("-", 0, () -> {
-//            if (ops.peek() != OPEN_PAR && ops.peek() != ABS)
+            if (ops.peek() != PAR && ops.peek() != ABS && ops.peek() != ADD)
                 ops.push(ADD);
             return -1 * vals.pop();
 }),
-//        INVERT(null, 1, () -> -1 * vals.pop()),
         MUL("*", 2, () -> {
             double a = vals.pop();
             double b = vals.pop();
@@ -193,7 +187,7 @@ public class Calculator {
     private static boolean busy = false; //set to true when any calculation is happening
 
     //starting value of x in solve() method. Should be close to 1 but within domain of all operators
-    private static final double DEFAULT_START_VAL = 1;
+    private static final double DEFAULT_START_VAL = 0.5;
     private static double x = 1; //what gets inserted in place of a variable
 
     //get the degree of the equation
@@ -245,8 +239,6 @@ public class Calculator {
         StringBuilder number = null;
 
         while (!buffer.isEmpty()) {
-            //pre process
-            buffer = buffer.replaceAll("\\(", "(+");
 
             //extracts a character
             char c = buffer.charAt(0);
@@ -402,28 +394,19 @@ public class Calculator {
      *                         sense
      */
     private Double findRoot(String input, List<Root> knownRoots, double startVal)
-            throws NoSolution, IllegalOperator, EmptyStackException {
+            throws NoSolution, IllegalOperator, EmptyStackException, OverShootPositive, OverShootNegative {
 
-        double tolerance = Math.pow(10, -7);;  //solution tolerance accepted
-        long timeAllowed = 3;       //time tolerated to solve (sec)
-        double dx = 0.00000001;     //step size
+        double tolerance = Math.pow(10, -7);  //solution tolerance accepted
+        long timeAllowed = maxDeg > 3 ? 3 : 1;       //time tolerated to solve (sec)
+        double dx = 0.000001;     //step size
         x = startVal;               //set initial variable value
         boolean positive;           //has it crossed the y = 0 line?
         long startTime = System.currentTimeMillis(), currTime, elapsed = 0;
         double y = calculate(input);
         positive = y > 0;
-        double derivative;
+        double derivative = 0;
 
         while (Math.abs(y) > tolerance) {
-
-            //TODO: delete this debugger
-            String peek = String.format(Locale.US,
-                    "y: %15.10e " +
-                            "var: %15.10f " +
-                            "continue? " + (Math.abs(y) > tolerance) + " " +
-                            "time elapsed: %2d "
-                    , y, x, elapsed);
-            System.out.println(peek);
 
             //checks if time limit exceeded
             currTime = System.currentTimeMillis();
@@ -444,6 +427,30 @@ public class Calculator {
             double dy = calculate(input) - y; //result of calculate has changed since var changed
             derivative = dy / dx;
 
+            //TODO: delete this debugger
+            String peek = String.format(Locale.US,
+                    "y: %15.10e " +
+                            "var: %15.10f " +
+                            "dx: %15.14e " +
+                            "derivative: %15.10f " +
+                            "continue? " + (Math.abs(y) > tolerance) + " " +
+                            "time elapsed: %2d "
+                    , y, x, dx, derivative, elapsed);
+            System.out.println(peek);
+
+            //stay away from tan = 0 points
+            if (Math.abs(derivative) < 0.001){
+                startVal = - startVal * 1.2;
+                x = startVal;
+                continue;
+            }
+
+            //know when you've over shoot all roots
+            if (derivative > 1000)
+                throw new OverShootPositive("Over shoot all roots");
+            if (derivative < -1000)
+                throw new OverShootNegative("Over shoot all roots");
+
             //update x
             x = x - (y / derivative);
 
@@ -451,10 +458,11 @@ public class Calculator {
             if (x == Double.NEGATIVE_INFINITY || x == Double.POSITIVE_INFINITY) {
                 startVal = - startVal * 1.2;
                 x = startVal;
+                continue;
             }
 
             //update step size
-            dx = dx / 6;
+            dx = dx / 5;
                 //one peculiar note: the rate at which y approaches 0 after first few iterations
                 // is equal to the step size reduction rate! (true for ~10^-3 init step size)
                 //however, reducing initial step size is more effective
@@ -490,13 +498,33 @@ public class Calculator {
         long startTime = System.currentTimeMillis(), currTime, elapsed = 0;
         double timeAllowed = 5;
         Double newRoot;
+        boolean overshootPositive = false, overshootNegative = false;
         do {
 
             //find new root
-            newRoot = findRoot(input, roots, startVal);
+            try {
+                newRoot = findRoot(input, roots, startVal);
+            } catch (NoSolution noSolution){
+                if (roots.isEmpty())
+                    throw new NoSolution(noSolution.getMessage());
+                startVal = - (startVal) * 1.2;
+                continue;
+            } catch (OverShootPositive | OverShootNegative overShoot){
+                if (overShoot instanceof OverShootPositive)
+                    overshootPositive = true;
+                else
+                    overshootNegative = true;
+
+                if (overshootNegative && overshootPositive)
+                    break;
+                else {
+                    startVal = - (startVal) * 1.2;
+                    continue;
+                }
+            }
 
             //trial limit and duplication check
-            if (roots.contains(new Root(x))) {
+            if (roots.contains(new Root(newRoot))) {
                 trial++;
                 System.out.println(trial);
                 if (trial > trialsAllowed){
@@ -504,7 +532,7 @@ public class Calculator {
                         throw new NoSolution("Trial limit exceeded");
                     break;
                 }
-                startVal = -startVal * 1.2; //in hope it will turn out a new root
+                startVal = - (startVal) * 1.2; //in hope it will turn out a new root
                 continue;
             }
 
@@ -514,7 +542,7 @@ public class Calculator {
             System.out.println("Added: " + newRoot);
 
             //change startVal to avoid stepping into known val
-            startVal = -1.2 * newRoot;
+            startVal = - (newRoot + startVal) * 1.2;
 
             //check time
             currTime = System.currentTimeMillis();
@@ -535,7 +563,6 @@ public class Calculator {
         }
 
         busy = false;
-        startVal = DEFAULT_START_VAL;
         return response.toString();
     }
 
