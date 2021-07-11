@@ -404,7 +404,7 @@ public class Calculator {
         long startTime = System.currentTimeMillis(), currTime, elapsed = 0;
         double y = calculate(input);
         positive = y > 0;
-        double derivative = 0;
+        double derivative;
 
         while (Math.abs(y) > tolerance) {
 
@@ -445,7 +445,7 @@ public class Calculator {
                 continue;
             }
 
-            //know when you've over shoot all roots
+            //know when you've over shoot all roots, rejects too high slopes
             if (derivative > 1000)
                 throw new OverShootPositive("Over shoot all roots");
             if (derivative < -1000)
@@ -493,12 +493,12 @@ public class Calculator {
         double startVal = DEFAULT_START_VAL;
         int trial = 1, trialsAllowed = 3;       //times hitting a known root before aborting
         List<Root> roots = new ArrayList<>();   //stores known roots
-
-        //loop through solve() to find those roots
         long startTime = System.currentTimeMillis(), currTime, elapsed = 0;
         double timeAllowed = 5;
         Double newRoot;
         boolean overshootPositive = false, overshootNegative = false;
+
+        //loop through solve() to find those roots
         do {
 
             //find new root
@@ -510,17 +510,18 @@ public class Calculator {
                 startVal = - (startVal) * 1.2;
                 continue;
             } catch (OverShootPositive | OverShootNegative overShoot){
-                if (overShoot instanceof OverShootPositive)
+                if (overShoot instanceof OverShootPositive) {
                     overshootPositive = true;
-                else
+                    startVal = - Math.abs(startVal) * 1.5;
+                }
+                else {
                     overshootNegative = true;
+                    startVal = Math.abs(startVal) * 1.5;
+                }
 
                 if (overshootNegative && overshootPositive)
                     break;
-                else {
-                    startVal = - (startVal) * 1.2;
-                    continue;
-                }
+                else continue;
             }
 
             //trial limit and duplication check

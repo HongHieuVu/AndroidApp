@@ -29,8 +29,8 @@ public class Root {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Root root = (Root) o;
-        String thisNum = String.format(Locale.US,"%.5f", value);
-        String thatNum = String.format(Locale.US,"%.5f", root.getValue());
+        String thisNum = String.format(Locale.US,"%.4f", value);
+        String thatNum = String.format(Locale.US,"%.4f", root.getValue());
         return thisNum.equals(thatNum);
     }
 
