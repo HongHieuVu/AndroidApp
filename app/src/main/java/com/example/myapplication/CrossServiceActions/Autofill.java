@@ -39,8 +39,9 @@ public class Autofill extends Actions{
 
         String operatorRep;
         for (Calculator.Operators op: Calculator.Operators.values()) {
-            operatorRep = op.getOperatorStr();
+            if (op.getOperatorStr() == null) continue;
 
+            operatorRep = op.getOperatorStr();
             if (operatorRep.length() == 1) continue; //nothing to fill
 
             if (canAutofill){

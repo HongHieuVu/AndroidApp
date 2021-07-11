@@ -15,8 +15,8 @@ public class SolveEquation extends Actions {
             Calculator calculator = Calculator.getCalculator();
             if (calculator == null) return "";
             try {
-                return String.format(Locale.US,"%s", calculator.solveAll(equation));
-            } catch (IllegalOperator | NoSolution | NotAnEquation | EmptyStackException calculatorError) {
+                return String.format(Locale.US,"%s", calculator.solve(equation));
+            } catch (IllegalOperator | EmptyStackException | NotAnEquation | NoSolution calculatorError) {
                 calculatorError.printStackTrace();
                 return calculatorError.getMessage();
             }

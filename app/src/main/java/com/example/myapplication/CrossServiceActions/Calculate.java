@@ -16,7 +16,8 @@ public class Calculate extends Actions {
             } catch (IllegalOperator illegalOperator) {
                 illegalOperator.printStackTrace();
                 return illegalOperator.getMessage();
-            } catch (EmptyStackException emptyStackException){
+            }
+            catch (EmptyStackException emptyStackException){
                 return "Wrong Arithmetic";
             }
         });
