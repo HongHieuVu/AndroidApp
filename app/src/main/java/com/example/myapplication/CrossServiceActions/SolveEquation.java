@@ -13,7 +13,7 @@ public class SolveEquation extends Actions {
     public SolveEquation(String equation){
         setResult(() -> {
             Calculator calculator = Calculator.getCalculator();
-            if (calculator == null) return "";
+            if (calculator == null) return "Calculator working";
             try {
                 return String.format(Locale.US,"%s", calculator.solve(equation));
             } catch (IllegalOperator | EmptyStackException | NotAnEquation | NoSolution calculatorError) {

@@ -3,8 +3,7 @@ package com.example.myapplication;
 import com.example.myapplication.Exceptions.IllegalOperator;
 import com.example.myapplication.Exceptions.NoSolution;
 import com.example.myapplication.Exceptions.NotAnEquation;
-import com.example.myapplication.Exceptions.OverShootNegative;
-import com.example.myapplication.Exceptions.OverShootPositive;
+import com.example.myapplication.Exceptions.OverShoot;
 
 import java.util.ArrayList;
 import java.util.EmptyStackException;
@@ -394,11 +393,11 @@ public class Calculator {
      *                         sense
      */
     private Double findRoot(String input, List<Root> knownRoots, double startVal)
-            throws NoSolution, IllegalOperator, EmptyStackException, OverShootPositive, OverShootNegative {
+            throws NoSolution, IllegalOperator, EmptyStackException, OverShoot {
 
         double tolerance = Math.pow(10, -7);  //solution tolerance accepted
-        long timeAllowed = maxDeg > 3 ? 3 : 1;       //time tolerated to solve (sec)
-        double dx = 0.000001;     //step size
+        long timeAllowed = maxDeg > 3 ? 4 : 2;       //time tolerated to solve (sec)
+        double dx = 0.0000000001;     //step size
         x = startVal;               //set initial variable value
         boolean positive;           //has it crossed the y = 0 line?
         long startTime = System.currentTimeMillis(), currTime, elapsed = 0;
@@ -446,10 +445,8 @@ public class Calculator {
             }
 
             //know when you've over shoot all roots, rejects too high slopes
-            if (derivative > 1000)
-                throw new OverShootPositive("Over shoot all roots");
-            if (derivative < -1000)
-                throw new OverShootNegative("Over shoot all roots");
+            if (Math.abs(derivative) > 1000)
+                throw new OverShoot("Over shoot all roots", x > 0);
 
             //update x
             x = x - (y / derivative);
@@ -462,7 +459,7 @@ public class Calculator {
             }
 
             //update step size
-            dx = dx / 5;
+//            dx = dx / 5;
                 //one peculiar note: the rate at which y approaches 0 after first few iterations
                 // is equal to the step size reduction rate! (true for ~10^-3 init step size)
                 //however, reducing initial step size is more effective
@@ -496,7 +493,10 @@ public class Calculator {
         long startTime = System.currentTimeMillis(), currTime, elapsed = 0;
         double timeAllowed = 5;
         Double newRoot;
-        boolean overshootPositive = false, overshootNegative = false;
+        int ovShootPos = 0, ovShootNeg = 0; //overshoot traces
+
+        //input formatting
+        input = input.replaceAll(" ", "");
 
         //loop through solve() to find those roots
         do {
@@ -509,19 +509,17 @@ public class Calculator {
                     throw new NoSolution(noSolution.getMessage());
                 startVal = - (startVal) * 1.2;
                 continue;
-            } catch (OverShootPositive | OverShootNegative overShoot){
-                if (overShoot instanceof OverShootPositive) {
-                    overshootPositive = true;
-                    startVal = - Math.abs(startVal) * 1.5;
-                }
-                else {
-                    overshootNegative = true;
-                    startVal = Math.abs(startVal) * 1.5;
-                }
+            } catch (OverShoot overShoot){
+                if (overShoot.isPositive()) ovShootPos ++;
+                else ovShootNeg ++;
 
-                if (overshootNegative && overshootPositive)
+                //breaks when it is sure that we've overshoot all roots
+                if (ovShootPos + ovShootNeg > 4 ||
+                        (ovShootPos > 4 && ovShootNeg > 4))
                     break;
-                else continue;
+
+                startVal = - (startVal) * 1.2;
+                continue;
             }
 
             //trial limit and duplication check

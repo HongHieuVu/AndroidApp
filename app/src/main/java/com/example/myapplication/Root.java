@@ -29,6 +29,8 @@ public class Root {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Root root = (Root) o;
+
+        //checking precision should be less than displayed precision
         String thisNum = String.format(Locale.US,"%.4f", value);
         String thatNum = String.format(Locale.US,"%.4f", root.getValue());
         return thisNum.equals(thatNum);
