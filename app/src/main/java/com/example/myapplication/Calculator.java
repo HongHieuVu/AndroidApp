@@ -7,8 +7,10 @@ import com.example.myapplication.Exceptions.OverShoot;
 
 import java.util.ArrayList;
 import java.util.EmptyStackException;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.Stack;
 
@@ -47,7 +49,7 @@ public class Calculator {
             if (ops.peek() != PAR && ops.peek() != ABS && ops.peek() != ADD)
                 ops.push(ADD);
             return -1 * vals.pop();
-}),
+        }),
         MUL("*", 2, () -> {
             double a = vals.pop();
             double b = vals.pop();
@@ -162,41 +164,67 @@ public class Calculator {
         public String getOperatorStr() {
             return this.operatorStr;
         }
-
-        /**
-         * converts from String to corresponding enum
-         *
-         * @param operator string for conversion
-         * @return corresponding operator
-         */
-        public static Operators assignEnum(String operator) {
-            for (Operators op : Operators.values()) {
-                if (operator.equals(op.getOperatorStr())) return op;
-            }
-            return null; //what to do if illegal char or unidentified operator (basically the same)?
-        }
     }
 
-    //operator and values stack
+    /**
+     * stores operators in a table for quick referencing
+     */
+    Map<String, Operators> opsTable;
+
     private static Calculator cal;
+
+    /**
+     * dijkstra operator stack
+     */
     private static Stack<Operators> ops;
+
+    /**
+     * dijkstra values stack
+     */
     private static Stack<Double> vals;
 
-    //multithreading trick
-    private static boolean busy = false; //set to true when any calculation is happening
+    /**
+     * calculator's busy flag, set to true when any calculation is happening
+     */
+    private static boolean busy = false;
 
-    //starting value of x in solve() method. Should be close to 1 but within domain of all operators
+    /**
+     * starting value of x in solve() method. Should be close to 1 but within domain of all operators
+     */
     private static final double DEFAULT_START_VAL = 0.5;
-    private static double x = 1; //what gets inserted in place of a variable
+
+    /**
+     * what gets inserted in place of a variable
+     */
+    private static double x = 1;
 
     //get the degree of the equation
     private static double maxDeg = 0;
     private static double deg = 0;
     private static boolean complexDeg = false;
 
+    /**
+     * offset factor of where to start looking for new root using Newton method
+     */
+    double swingFactor = 1.2;
+
     private Calculator() {
         ops = new Stack<>();
         vals = new Stack<>();
+        opsTable = new Hashtable<>();
+        for (Operators op : Operators.values()){
+            opsTable.put(op.getOperatorStr(), op);
+        }
+    }
+
+    /**
+     * eliminates all illegal characters for faster processing
+     * @param inputEquation user's input equation
+     * @return pre-processed string
+     */
+    private String preProcessing(String inputEquation){
+        inputEquation = inputEquation.replaceAll(" ", "");
+        return inputEquation;
     }
 
     /**
@@ -217,6 +245,15 @@ public class Calculator {
     }
 
     /**
+     * converts from String to corresponding enum
+     * @param userInput string for conversion
+     * @return corresponding operator
+     */
+    private Operators assignEnum(String userInput){
+        return opsTable.get(userInput);
+    }
+
+    /**
      * solve the equation. The part on the right hand side of an equation will be inverted.
      *
      * @param input input equation
@@ -233,6 +270,7 @@ public class Calculator {
         ops.push(Operators.ADD);
         deg = 0;
 
+        input = preProcessing(input);
         String buffer = input;
         StringBuilder longOp = null; //long operators are operators with more than one char
         StringBuilder number = null;
@@ -247,7 +285,7 @@ public class Calculator {
 
                 //see if the previous operator is complete
                 if (longOp != null) {
-                    Operators op = Operators.assignEnum(longOp.toString());
+                    Operators op = assignEnum(longOp.toString());
                     if (op == null)
                         throw new IllegalOperator("Illegal operator: " + longOp.toString());
                     if (ops.peek().orderOfExec >= op.orderOfExec
@@ -327,7 +365,7 @@ public class Calculator {
                 }
 
                 //note the operator
-                Operators op = Operators.assignEnum(Character.toString(c));
+                Operators op = assignEnum(Character.toString(c));
                 if (op != null) {
                     if (ops.peek().orderOfExec > op.orderOfExec
                             && (op != Operators.PAR)
@@ -392,17 +430,15 @@ public class Calculator {
      * @throws IllegalOperator if an undefined operator is found, or operators doesn't make mathematical
      *                         sense
      */
-    private Double findRoot(String input, List<Root> knownRoots, double startVal)
+    private Double findRoot(String input, double startVal)
             throws NoSolution, IllegalOperator, EmptyStackException, OverShoot {
 
         double tolerance = Math.pow(10, -7);  //solution tolerance accepted
         long timeAllowed = maxDeg > 3 ? 4 : 2;       //time tolerated to solve (sec)
         double dx = 0.0000000001;     //step size
         x = startVal;               //set initial variable value
-        boolean positive;           //has it crossed the y = 0 line?
         long startTime = System.currentTimeMillis(), currTime, elapsed = 0;
         double y = calculate(input);
-        positive = y > 0;
         double derivative;
 
         while (Math.abs(y) > tolerance) {
@@ -412,14 +448,6 @@ public class Calculator {
             elapsed = (currTime - startTime) / 1000; //milisec to sec
             if (elapsed > timeAllowed)
                 throw new NoSolution("No solution found in reasonable time");
-
-            //exit Newton method once crossed the y = 0 line
-//            if (positive != y > 0){
-//
-//                //binary search method
-//                //TODO: write this method
-//                continue;
-//            }
 
             //calculate derivative at current x
             x += dx;
@@ -458,12 +486,6 @@ public class Calculator {
                 continue;
             }
 
-            //update step size
-//            dx = dx / 5;
-                //one peculiar note: the rate at which y approaches 0 after first few iterations
-                // is equal to the step size reduction rate! (true for ~10^-3 init step size)
-                //however, reducing initial step size is more effective
-
             //get value of y(x) at current x
             y = calculate(input);
         }
@@ -496,29 +518,29 @@ public class Calculator {
         int ovShootPos = 0, ovShootNeg = 0; //overshoot traces
 
         //input formatting
-        input = input.replaceAll(" ", "");
+        input = preProcessing(input);
 
         //loop through solve() to find those roots
         do {
 
             //find new root
             try {
-                newRoot = findRoot(input, roots, startVal);
+                newRoot = findRoot(input, startVal);
             } catch (NoSolution noSolution){
                 if (roots.isEmpty())
                     throw new NoSolution(noSolution.getMessage());
-                startVal = - (startVal) * 1.2;
+                startVal = - (startVal) * swingFactor;
                 continue;
             } catch (OverShoot overShoot){
                 if (overShoot.isPositive()) ovShootPos ++;
                 else ovShootNeg ++;
 
-                //breaks when it is sure that we've overshoot all roots
+                //breaks when it is sure that we've overshoot all roots, tolerance factor of 4 times
                 if (ovShootPos + ovShootNeg > 4 ||
                         (ovShootPos > 4 && ovShootNeg > 4))
                     break;
 
-                startVal = - (startVal) * 1.2;
+                startVal = - (startVal) * swingFactor;
                 continue;
             }
 
@@ -531,7 +553,7 @@ public class Calculator {
                         throw new NoSolution("Trial limit exceeded");
                     break;
                 }
-                startVal = - (startVal) * 1.2; //in hope it will turn out a new root
+                startVal = - (startVal) * swingFactor; //in hope it will turn out a new root
                 continue;
             }
 
@@ -541,7 +563,7 @@ public class Calculator {
             System.out.println("Added: " + newRoot);
 
             //change startVal to avoid stepping into known val
-            startVal = - (newRoot + startVal) * 1.2;
+            startVal = - (newRoot + startVal) * swingFactor;
 
             //check time
             currTime = System.currentTimeMillis();
