@@ -285,14 +285,20 @@ public class Calculator {
 
                 //see if the previous operator is complete
                 if (longOp != null) {
+
+                    //The previous operator must be completed by now
                     Operators op = assignEnum(longOp.toString());
                     if (op == null)
                         throw new IllegalOperator("Illegal operator: " + longOp.toString());
+
+                    //Gives priority to previous operator if its order is higher
                     if (ops.peek().orderOfExec >= op.orderOfExec
                             && (op != Operators.PAR)) {
                         Operators prevOp = ops.pop();
                         vals.push(prevOp.calculate());
                     }
+
+                    //Complete the operator before registering the number
                     ops.push(op);
                     longOp = null;
                 }
@@ -300,6 +306,7 @@ public class Calculator {
                 //note the number
                 if (number == null) number = new StringBuilder();
                 number.append(c);
+
             } else {
                 if (c == SPACE) continue;
 
@@ -366,13 +373,16 @@ public class Calculator {
 
                 //note the operator
                 Operators op = assignEnum(Character.toString(c));
-                if (op != null) {
+                if (op != null) {  //if an operator is complete
+
+                    //Gives priority to previous operator if its order is higher
                     if (ops.peek().orderOfExec > op.orderOfExec
                             && (op != Operators.PAR)
                             && (op != Operators.ABS)) {
                         Operators prevOp = ops.pop();
                         vals.push(prevOp.calculate());
                     }
+
                     longOp = null;
                     ops.push(op);
                     continue;
@@ -406,6 +416,8 @@ public class Calculator {
     private void backCalculate() {
         while (ops.peek() != Operators.PAR && ops.peek() != Operators.ABS) {
             Operators op = ops.pop();
+
+            //Gives priority to previous operator if its order is higher
             if (!ops.isEmpty() && ops.peek().orderOfExec > op.orderOfExec) {
                 double tmp = vals.pop();
                 Operators prevOp = ops.pop();
@@ -414,6 +426,7 @@ public class Calculator {
                 ops.push(op);
                 continue;
             }
+
             vals.push(op.calculate());
         }
         if (ops.peek() == Operators.ABS)

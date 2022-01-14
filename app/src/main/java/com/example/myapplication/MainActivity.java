@@ -77,7 +77,10 @@ public class MainActivity extends AppCompatActivity {
         calculate.setOnClickListener(v -> {
             String input = numInput.getText().toString();
             StringBuilder res = new StringBuilder();
+
+            //Runs on another thread so that it won't stall UI thread
             new Thread(() -> {
+
                 //calculate with corresponding mode
                 if (calculatorMode.isCalculateMode())
                     res.append(new Calculate(input).getResult());
