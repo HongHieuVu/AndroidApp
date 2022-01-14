@@ -15,7 +15,7 @@ Also, there's an equation-solving mode, for those who are lazy. Just type in the
 Some cool things:
 - App controller receives display-ready responses from services and doesn't have to worry about exceptions, while services can throw as many exceptions as nescessary as exception handling is delegated to messages exchanged between services. (Meaning exceptions dissapear when the message is on its way to the service user). All exception handlings is in one place.
 - Response formatting is done by the action object on its way to the service user. Neither the service nor the user need to concern with output reformating.
-- All services and controllers interact via actions (messages), irrespective of what that service's API is like (this is anonymity). Each service's function has its own associated action.
+- All services and controllers interact via actions (messages), irrespective of what that service's API is like (this is anonymity). Every function of every service has its own associated action.
 - All messages inherits from the action class, but the input variable types for each message can be different and there's no restriction in the number of inputs. This feature provides greater flexibility than overriding methods.
 - If a service's API changes, there's only one place that needs to change and that is the use of that service in the respective action (message) class. No need to re-write controller (service user). All consequences of a service's API change is in one place, no matter how many classes use that API.
 - The action is already performed by the time it is created, result is stored in the action, and the service user only needs to peek inside the message to get the result. (automation)
