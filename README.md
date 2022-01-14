@@ -13,7 +13,7 @@ without having the user specifically write this:
 Also, there's an equation-solving mode, for those who are lazy. Just type in the equation, and the app would adjust its mode accordingly.
 
 Some cool things:
-- App controller receives display-ready responses from services and doesn't have to worry about exceptions, while services can throw as many exceptions as nescessary as exception handling is delegated to messages exchanged between services. (Meaning exceptions dissapear when the message is on its way to the service user)
+- App controller receives display-ready responses from services and doesn't have to worry about exceptions, while services can throw as many exceptions as nescessary as exception handling is delegated to messages exchanged between services. (Meaning exceptions dissapear when the message is on its way to the service user). All exception handlings is in one place.
 - Response formatting is done by the response on its way to the service user. Neither the service nor the user need to concern with output reformating.
 - All services and controllers interact via actions (messages), irrespective of what that service's API is like (this is anonymity). Each service's function has its own associated action.
 - All messages inherits from the action class, but the input variable types for each message can be different and there's no restriction in the number of inputs. This feature provides greater flexibility than overriding methods.
